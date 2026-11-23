@@ -115,7 +115,7 @@ export function SolutionView({
       {result.prerequisites.length > 0 && (
         <section className="card p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <BookOpen className="h-5 w-5 text-accent" /> Prerequisite Skills Needed
+            <BookOpen className="h-5 w-5 text-accent" /> Prerequisite skills
           </h2>
           <p className="mt-1 text-sm text-muted">If any of these is shaky, fix it first. The rest of the solution depends on it.</p>
           <div className="mt-4 space-y-4">
@@ -155,14 +155,14 @@ export function SolutionView({
       <section className="card p-5">
         <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
           <button type="button" className={`tab flex-1 justify-center ${tab === "teacher" ? "tab-active" : ""}`} onClick={() => setTab("teacher")}>
-            Step-by-Step Solution
+            Billy's solution
           </button>
           <button
             type="button"
             className={`tab flex-1 justify-center ${tab === "simpler" ? "tab-active" : ""}`}
             onClick={() => setTab("simpler")}
           >
-            <Zap className="h-4 w-4" /> Simpler or Faster Way
+            <Zap className="h-4 w-4" /> Faster way
           </button>
         </div>
         {tab === "teacher" ? (
@@ -182,11 +182,11 @@ export function SolutionView({
         <div className="flex flex-wrap items-center gap-2">
           {v.verified ? (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-success">
-              <ShieldCheck className="h-5 w-5" /> Verified Final Answer
+              <ShieldCheck className="h-5 w-5" /> Verified final answer
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-warning">
-              <TriangleAlert className="h-5 w-5" /> Final Answer, verification incomplete
+              <TriangleAlert className="h-5 w-5" /> Final answer, verification incomplete
             </span>
           )}
           <div className="ml-auto flex gap-2">
@@ -233,14 +233,14 @@ export function SolutionView({
       <section className="flex flex-wrap gap-2">
         <button type="button" className="btn-primary" onClick={getChallenge} disabled={challengeBusy}>
           {challengeBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          Challenge Me: Honors Version
+          Challenge me: Honors version
         </button>
         <Link href={`/tutor?p=${encodeURIComponent(result.problemLatex)}`} className="btn-ghost">
-          <MessageSquare className="h-4 w-4" /> Discuss with the teacher
+          <MessageSquare className="h-4 w-4" /> Work through it with Billy
         </Link>
         {result.graphExpressions.length > 0 && (
           <Link href={calculatorHref(result.graphExpressions)} className="btn-ghost">
-            <Calculator className="h-4 w-4" /> Open in Graphing Calculator
+            <Calculator className="h-4 w-4" /> Open in graphing calculator
           </Link>
         )}
       </section>
@@ -248,7 +248,7 @@ export function SolutionView({
 
       {challenge && (
         <section className="card border-accent p-5">
-          <div className="label">Honors Challenge</div>
+          <div className="label">Honors challenge</div>
           <MathBlock latex={challenge.problemLatex} className="mt-2 text-lg" />
           <MathText text={challenge.whyHarder} className="mt-1 text-sm text-muted" />
           <div className="mt-4 flex flex-wrap gap-2">

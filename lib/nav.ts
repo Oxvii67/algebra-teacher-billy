@@ -15,19 +15,21 @@ import {
 export interface NavItem {
   href: string;
   label: string;
+  /** Label used in the 390px bottom bar. */
+  short: string;
   icon: LucideIcon;
   mobile?: boolean;
 }
 
 export const NAV: NavItem[] = [
-  { href: "/", label: "Home", icon: House, mobile: true },
-  { href: "/studio", label: "Math Studio", icon: PenTool, mobile: true },
-  { href: "/tutor", label: "Teacher Chat", icon: MessageSquare, mobile: true },
-  { href: "/drill", label: "Spot the Mistake", icon: Target },
-  { href: "/practice-test", label: "Practice Test", icon: ClipboardList, mobile: true },
-  { href: "/calculator", label: "Graphing Calculator", icon: Calculator, mobile: true },
-  { href: "/videos", label: "Video Finder", icon: Video },
-  { href: "/cheat-sheet", label: "Formula Sheet", icon: BookOpen },
-  { href: "/history", label: "History and Folders", icon: FolderOpen },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "Home", short: "Home", icon: House, mobile: true },
+  { href: "/studio", label: "Solve a problem", short: "Solve", icon: PenTool, mobile: true },
+  { href: "/tutor", label: "Ask Billy", short: "Ask Billy", icon: MessageSquare, mobile: true },
+  { href: "/drill", label: "Spot the mistake", short: "Drill", icon: Target },
+  { href: "/practice-test", label: "Practice test", short: "Test", icon: ClipboardList, mobile: true },
+  { href: "/calculator", label: "Graphing calculator", short: "Graph", icon: Calculator, mobile: true },
+  { href: "/videos", label: "Lesson videos", short: "Videos", icon: Video },
+  { href: "/cheat-sheet", label: "Formula sheet", short: "Formulas", icon: BookOpen },
+  { href: "/history", label: "History and folders", short: "History", icon: FolderOpen },
+  { href: "/settings", label: "Settings and themes", short: "Settings", icon: Settings },
 ];

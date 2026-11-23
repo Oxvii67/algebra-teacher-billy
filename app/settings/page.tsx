@@ -1,13 +1,13 @@
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { AccountPanel } from "./AccountPanel";
 
-export const metadata = { title: "Settings" };
+export const metadata = { title: "Settings and themes" };
 
 export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-serif text-3xl font-semibold">Settings</h1>
+        <h1 className="page-title">Settings</h1>
         <p className="mt-1 text-muted">Theme changes apply instantly and are saved on this device.</p>
       </header>
       <AccountPanel />

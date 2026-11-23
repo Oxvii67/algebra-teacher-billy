@@ -1,23 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { Flame } from "lucide-react";
 import { useData } from "@/lib/data/DataProvider";
-import { xpForLevel } from "@/lib/progress";
+import { MasteryBars } from "@/components/home/HomeProgress";
+import { useLevelProgress } from "@/components/shell/StudyMeter";
 
 export function AccountPanel() {
-  const { user, profile, mode, signOut } = useData();
-  const lo = xpForLevel(profile.level);
-  const hi = xpForLevel(profile.level + 1);
-  const pct = Math.min(100, Math.round(((profile.xp - lo) / Math.max(1, hi - lo)) * 100));
-  const skills = Object.entries(profile.skill_mastery).sort((a, b) => b[1] - a[1]);
+  const { user, mode, signOut } = useData();
+  const { profile, into, need, pct } = useLevelProgress();
+  const hasSkills = Object.keys(profile.skill_mastery).length > 0;
 
   return (
-    <section className="card space-y-5 p-5">
+    <section className="card space-y-6 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{user ? user.email : "Guest mode"}</h2>
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold">{user ? user.email : "Guest mode"}</h2>
           <p className="text-sm text-muted">
-            {mode === "cloud" ? "Progress syncs to your account." : "Progress is stored in this browser. Sign in and it moves into your account."}
+            {mode === "cloud" ? "Progress syncs to your account." : "Progress is saved in this browser. Sign in and it moves into your account."}
           </p>
         </div>
         {user ? (
@@ -33,50 +33,42 @@ export function AccountPanel() {
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <Stat label="Level" value={profile.level} />
-        <Stat label="XP" value={profile.xp} />
-        <Stat label="Streak" value={`${profile.streak_days} day${profile.streak_days === 1 ? "" : "s"}`} />
+        <Stat label="Total XP" value={profile.xp} />
+        <Stat
+          label="Study streak"
+          value={
+            <span className={`inline-flex items-center gap-1 ${profile.streak_days ? "text-warning" : ""}`}>
+              <Flame className="h-5 w-5" />
+              {profile.streak_days}
+            </span>
+          }
+        />
       </div>
       <div>
-        <div className="mb-1 flex justify-between text-xs text-muted">
+        <div className="mb-1.5 flex justify-between text-xs font-semibold text-muted">
           <span>Level {profile.level}</span>
-          <span>
-            {profile.xp - lo} / {hi - lo} XP to level {profile.level + 1}
+          <span className="tabular-nums">
+            {into} / {need} XP to level {profile.level + 1}
           </span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+        <div className="h-2.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full rounded-full bg-accent transition-[width] duration-700" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
       <div>
-        <h3 className="label mb-2">Skill mastery</h3>
-        {skills.length === 0 ? (
-          <p className="text-sm text-muted">Solve problems, take drills, and finish tests to build a mastery record.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {skills.slice(0, 16).map(([k, v]) => (
-              <li key={k} className="text-sm">
-                <div className="flex justify-between">
-                  <span className="truncate capitalize">{k}</span>
-                  <span className="text-muted">{v}%</span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                  <div className="h-full" style={{ width: `${v}%`, background: v >= 70 ? "var(--success)" : v >= 40 ? "var(--warning)" : "var(--danger)" }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h3 className="mb-3 font-bold">Topic mastery</h3>
+        {hasSkills ? <MasteryBars limit={16} /> : <p className="text-sm text-muted">Solve problems, take drills, and finish tests to build a mastery record.</p>}
       </div>
     </section>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-surface-2 p-3">
-      <div className="text-xl font-semibold">{value}</div>
-      <div className="text-xs text-muted">{label}</div>
+    <div className="rounded-xl bg-surface-2 p-3">
+      <div className="text-xl font-black tabular-nums">{value}</div>
+      <div className="text-xs font-semibold text-muted">{label}</div>
     </div>
   );
 }

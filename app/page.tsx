@@ -1,50 +1,67 @@
 import Link from "next/link";
+import { Hero } from "@/components/home/Hero";
+import { HomeProgress } from "@/components/home/HomeProgress";
 import { NAV } from "@/lib/nav";
-import { MathBlock } from "@/components/math/Math";
 
-const BLURBS: Record<string, string> = {
-  "/studio": "Photograph, draw, or type a problem. Get a verified, step-by-step solution.",
-  "/tutor": "A Socratic teacher who makes you do the thinking and pushes back on guesses.",
+const PRIMARY: Record<string, string> = {
+  "/studio": "Photograph it, draw it, or type it. Every line explained, every answer checked by substitution.",
+  "/tutor": "Billy asks the questions. Guess wrong and he tells you exactly where it breaks.",
+};
+
+const SECONDARY: Record<string, string> = {
   "/drill": "Sixty seconds. One wrong step. Find it.",
-  "/practice-test": "Turn up to ten problems into a graded test at your level or harder.",
-  "/calculator": "Graph anything. Sliders, roots, extrema, intersections, tables.",
-  "/videos": "Find the right lesson video for the exact skill you are missing.",
-  "/cheat-sheet": "One printable page of the formulas you are expected to know cold.",
-  "/history": "Every solved problem, organized in your own folders.",
+  "/practice-test": "Up to ten homework problems become a graded test.",
+  "/calculator": "Sliders, roots, extrema, intersections, tables.",
+  "/videos": "The lesson for the exact skill you are missing.",
+  "/cheat-sheet": "One printable page of formulas to know cold.",
+  "/history": "Every solved problem, filed in your folders.",
 };
 
 export default function Home() {
+  const primary = NAV.filter((n) => PRIMARY[n.href]);
+  const secondary = NAV.filter((n) => SECONDARY[n.href]);
   return (
-    <div className="space-y-8">
-      <section className="card overflow-hidden p-6 md:p-8">
-        <p className="label">Algebra 2 and AP Precalculus</p>
-        <h1 className="mt-2 font-serif text-3xl font-semibold md:text-4xl">Show every step. Check every answer.</h1>
-        <p className="mt-3 max-w-2xl text-muted">
-          This is not an answer machine. Every solution is worked line by line, verified by substitution, and tied back
-          to the skills it depends on.
-        </p>
-        <MathBlock className="mt-4" latex="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}" />
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/studio" className="btn-primary">
-            Solve a problem
-          </Link>
-          <Link href="/tutor" className="btn-ghost">
-            Talk to the teacher
-          </Link>
-        </div>
-      </section>
+    <div className="space-y-12 md:space-y-16">
+      <Hero />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {NAV.filter((n) => BLURBS[n.href]).map((n) => {
-          const Icon = n.icon;
-          return (
-            <Link key={n.href} href={n.href} className="card group p-4 transition-colors hover:border-accent">
-              <Icon className="h-5 w-5 text-accent" />
-              <h2 className="mt-3 font-semibold">{n.label}</h2>
-              <p className="mt-1 text-sm text-muted">{BLURBS[n.href]}</p>
-            </Link>
-          );
-        })}
+      <HomeProgress />
+
+      <section aria-labelledby="tools-title" className="space-y-4">
+        <h2 id="tools-title" className="display-tight text-xl font-extrabold">
+          Pick up where you are stuck
+        </h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          {primary.map((n) => {
+            const Icon = n.icon;
+            return (
+              <Link key={n.href} href={n.href} className="card card-link flex gap-4 p-5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-fg">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-lg font-bold">{n.label}</span>
+                  <span className="mt-1 block text-sm text-muted">{PRIMARY[n.href]}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <ul className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+          {secondary.map((n) => {
+            const Icon = n.icon;
+            return (
+              <li key={n.href} className="border-b border-line">
+                <Link href={n.href} className="group flex items-start gap-3 rounded-lg px-1 py-3.5 transition-colors hover:bg-surface-2/60">
+                  <Icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-accent" />
+                  <span>
+                    <span className="block font-bold group-hover:underline group-hover:underline-offset-2">{n.label}</span>
+                    <span className="block text-sm text-muted">{SECONDARY[n.href]}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </section>
     </div>
   );

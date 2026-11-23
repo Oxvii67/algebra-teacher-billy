@@ -18,8 +18,7 @@
     "next": "^15.5.29",
     "perfect-freehand": "^1.2.3",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "react-katex": "^3.1.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",
@@ -27,7 +26,6 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/react-katex": "^3.0.4",
     "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "^5.9.3"

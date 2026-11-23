@@ -34,7 +34,7 @@ export function HistoryView() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-semibold">History and Folders</h1>
+          <h1 className="page-title">History and folders</h1>
           <p className="mt-1 text-sm text-muted">
             {mode === "cloud" ? "Synced to your account." : "Saved on this device. Sign in to sync across devices."}
           </p>
@@ -150,7 +150,7 @@ export function HistoryView() {
               <div key={s.id} className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 <Link href={`/history/view?id=${s.id}`} className="min-w-0 flex-1">
                   <div className="truncate font-medium">{s.title}</div>
-                  <div className="mt-1 max-w-full overflow-hidden text-sm text-muted">
+                  <div className="mt-1 max-w-full overflow-x-auto overflow-y-hidden py-1 text-sm text-muted">
                     <MathInline latex={s.problem_latex.length > 140 ? s.problem_latex.slice(0, 140) : s.problem_latex} />
                   </div>
                   <div className="mt-1 text-xs text-muted">

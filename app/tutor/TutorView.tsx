@@ -16,7 +16,7 @@ const STARTERS = [
   "Quiz me on domain and range",
 ];
 
-const OPENING = "State the problem you are working on, or pick a quiz below. I will not hand you answers. I will make you earn them.";
+const OPENING = "I'm Billy. Tell me the problem you're stuck on, or pick a quiz below. I won't hand you answers, but I'll stay with you until you can get them yourself.";
 
 export function TutorView() {
   const params = useSearchParams();
@@ -78,8 +78,8 @@ export function TutorView() {
     <div className="flex h-[calc(100dvh-10rem)] flex-col gap-4 md:h-[calc(100dvh-5rem)]">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-semibold">Teacher Chat</h1>
-          <p className="mt-1 text-sm text-muted">Socratic method. Guess wrong and you will hear about it.</p>
+          <h1 className="page-title">Ask Billy</h1>
+          <p className="mt-1 text-sm text-muted">Billy asks the questions. Guess wrong and he will show you exactly where it breaks.</p>
         </div>
         {messages.length > 0 && (
           <button className="btn-ghost btn-sm" onClick={reset}>
@@ -102,7 +102,7 @@ export function TutorView() {
         ))}
         {busy && (
           <div className="flex items-center gap-2 text-sm text-muted">
-            <LoaderCircle className="h-4 w-4 animate-spin" /> Thinking
+            <LoaderCircle className="h-4 w-4 animate-spin" /> Billy is thinking
           </div>
         )}
         {error && <p className="text-sm text-danger">{error}</p>}
@@ -110,14 +110,14 @@ export function TutorView() {
       </div>
 
       <div className="space-y-2">
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           {chips.map((c) => (
             <button
               key={c}
               type="button"
               disabled={busy}
               onClick={() => send(c.replace(/\$/g, ""))}
-              className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm hover:border-accent hover:bg-surface-2 disabled:opacity-50"
+              className="shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1.5 text-sm shadow-elev-1 hover:border-accent hover:bg-surface-2 disabled:opacity-50"
             >
               <MathText text={c} inline />
             </button>

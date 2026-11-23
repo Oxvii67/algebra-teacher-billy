@@ -91,7 +91,7 @@ export function DrillView() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-semibold">Spot the Teacher&apos;s Mistake</h1>
+          <h1 className="page-title">Spot Billy&apos;s mistake</h1>
           <p className="mt-1 text-muted">One step below is wrong. You have {SECONDS} seconds to click it.</p>
         </div>
         <div className="flex gap-4 text-sm">

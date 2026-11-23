@@ -1,18 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f7f6f2;
+  --bg: #f4f6fa;
   --surface: #ffffff;
-  --surface-2: #efede6;
-  --text: #1c1b19;
-  --muted: #6b6862;
-  --border: #dcd8cf;
-  --accent: #1d4ed8;
+  --surface-2: #eaeef5;
+  --text: #14213d;
+  --muted: #56607a;
+  --border: #cfd7e4;
+  --accent: #2346d6;
   --accent-fg: #ffffff;
-  --success: #15803d;
-  --danger: #b91c1c;
-  --warning: #b45309;
-  --grid: #e6e2d8;
+  --success: #1d7a4c;
+  --danger: #c8322b;
+  --warning: #9a5a06;
+  --grid: #dfe6f1;
+  --shadow: #14213d;
+
+  /* Elevation: a tight contact shadow plus a soft ambient one, tinted by the theme. */
+  --elev-1: 0 1px 0 color-mix(in srgb, var(--shadow) 5%, transparent), 0 1px 3px color-mix(in srgb, var(--shadow) 8%, transparent);
+  --elev-2: 0 1px 0 color-mix(in srgb, var(--shadow) 6%, transparent), 0 6px 16px -6px color-mix(in srgb, var(--shadow) 18%, transparent);
+  --elev-3: 0 2px 0 color-mix(in srgb, var(--shadow) 6%, transparent), 0 22px 48px -18px color-mix(in srgb, var(--shadow) 32%, transparent);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 @theme inline {
@@ -28,78 +35,215 @@
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   --color-grid: var(--grid);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-head), ui-sans-serif, system-ui, sans-serif;
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
 }
 
-html,
-body {
-  background: var(--bg);
-  color: var(--text);
+@layer base {
+  html,
+  body {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Theme-aware default border color. Kept inside the base layer so KaTeX's own rules always win. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
 }
 
-body {
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
-* {
-  border-color: var(--border);
-}
-
-::selection {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
+/* KaTeX. Unlayered so nothing in Tailwind's preflight can override it. --------------------------- */
 .katex {
-  font-size: 1.08em;
+  font-size: 1.12em;
+  line-height: 1.2;
+  text-rendering: auto;
+}
+/* Fraction bars, overlines and sqrt vinculums are borders: they must use the text color, not --border. */
+.katex,
+.katex * {
+  border-color: currentColor;
+}
+.katex svg {
+  max-width: none;
+  height: inherit;
+}
+.katex img {
+  max-width: none;
+  display: inline;
 }
 .katex-display {
-  margin: 0.5em 0;
+  margin: 0.4em 0;
   overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 0;
+  overflow-y: visible;
+  padding: 0.35em 0.1em;
+}
+.katex-display > .katex {
+  white-space: nowrap;
 }
 .math-error {
   color: var(--danger);
-  font-family: ui-monospace, monospace;
-  font-size: 0.85em;
+  font-size: 0.9em;
 }
 
+/* Component utilities ------------------------------------------------------------------------------ */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-[background-color,box-shadow,transform,color,border-color] duration-150 select-none disabled:cursor-not-allowed disabled:opacity-50;
+  &:not(:disabled):active {
+    transform: translateY(1px);
+  }
 }
-
 @utility btn-primary {
-  @apply btn bg-accent text-accent-fg hover:opacity-90;
+  @apply btn bg-accent text-accent-fg;
+  box-shadow: var(--elev-1), inset 0 -2px 0 color-mix(in srgb, black 18%, transparent);
+  &:not(:disabled):hover {
+    background: color-mix(in srgb, var(--accent) 88%, var(--text));
+    box-shadow: var(--elev-2), inset 0 -2px 0 color-mix(in srgb, black 18%, transparent);
+  }
 }
-
 @utility btn-ghost {
-  @apply btn border border-line bg-surface text-text hover:bg-surface-2;
+  @apply btn border border-line bg-surface text-text;
+  box-shadow: var(--elev-1);
+  &:not(:disabled):hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    background: var(--surface-2);
+  }
 }
-
 @utility btn-sm {
-  @apply px-2.5 py-1.5 text-xs;
+  @apply rounded-lg px-2.5 py-1.5 text-xs;
 }
-
 @utility card {
-  @apply rounded-xl border border-line bg-surface;
+  @apply rounded-2xl border border-line bg-surface;
+  box-shadow: var(--elev-1);
 }
-
+@utility card-raised {
+  @apply rounded-2xl border border-line bg-surface;
+  box-shadow: var(--elev-2);
+}
+@utility card-link {
+  transition:
+    box-shadow 180ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out);
+  &:hover {
+    box-shadow: var(--elev-2);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+}
 @utility input {
-  @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted focus:border-accent;
+  @apply w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted;
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
 }
-
 @utility label {
-  @apply text-xs font-semibold uppercase tracking-wide text-muted;
+  @apply text-[13px] font-semibold text-muted;
 }
-
 @utility tab {
-  @apply inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text;
+  @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted transition-colors duration-150 hover:text-text;
+}
+@utility tab-active {
+  @apply bg-surface text-text;
+  box-shadow: var(--elev-1);
+}
+@utility pill {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-semibold;
+}
+@utility graph-paper {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--grid) 100%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 100%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
 }
 
-@utility tab-active {
-  @apply bg-surface text-text shadow-sm;
+/* Motion: the whiteboard writes itself once; everything else moves only in response to the student. */
+@keyframes write-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes pen-stroke {
+  from {
+    stroke-dashoffset: var(--len, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.write-in {
+  animation: write-in 520ms var(--ease-out) both;
+}
+.pen-stroke {
+  stroke-dasharray: var(--len, 400);
+  animation: pen-stroke 700ms var(--ease-out) both;
+}
+.step-in {
+  animation: step-in 260ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .write-in,
+  .pen-stroke,
+  .step-in {
+    animation: none !important;
+    clip-path: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  * {
+    transition-duration: 0ms !important;
+  }
 }
 
 @media print {
@@ -111,11 +255,36 @@ body {
     background: #ffffff !important;
     color: #000000 !important;
   }
-  .print-area {
+  .print-area,
+  .print-area .card {
     border: none !important;
     box-shadow: none !important;
   }
   @page {
     margin: 0.5in;
   }
+}
+
+@utility page-title {
+  font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.45rem);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+@utility display-tight {
+  font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
+  font-stretch: 112%;
+  letter-spacing: -0.01em;
+}
+
+/* Whiteboard math: tight, left-aligned lines like handwriting on a board. */
+.wb .katex-display {
+  margin: 0;
+  padding: 0.12em 0;
+  text-align: left;
+}
+.wb .katex-display > .katex {
+  text-align: left;
 }

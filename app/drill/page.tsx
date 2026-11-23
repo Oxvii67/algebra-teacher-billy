@@ -1,6 +1,6 @@
 import { DrillView } from "./DrillView";
 
-export const metadata = { title: "Spot the Teacher's Mistake" };
+export const metadata = { title: "Spot the mistake" };
 
 export default function Page() {
   return <DrillView />;

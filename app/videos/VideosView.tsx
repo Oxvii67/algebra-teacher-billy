@@ -54,8 +54,8 @@ export function VideosView() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-semibold">Video Finder</h1>
-        <p className="mt-1 text-muted">Name the skill you are stuck on, or paste the problem. I will point you to the lesson to watch first.</p>
+        <h1 className="page-title">Lesson videos</h1>
+        <p className="mt-1 text-muted">Name the skill you are stuck on, or paste the problem. Billy points you to the lesson to watch first.</p>
       </header>
 
       <form
@@ -94,7 +94,7 @@ export function VideosView() {
           </div>
           {advice && !topic && (
             <div className="card h-fit p-4">
-              <div className="label mb-1">Teacher&apos;s note</div>
+              <div className="label mb-1">Billy&apos;s note</div>
               <MathText text={advice} className="text-sm" />
             </div>
           )}

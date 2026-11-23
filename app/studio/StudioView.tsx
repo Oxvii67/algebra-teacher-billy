@@ -1,20 +1,23 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 import { StudioInput } from "@/components/studio/StudioInput";
 import { SolutionView } from "@/components/solve/SolutionView";
 import { useData } from "@/lib/data/DataProvider";
 import type { SavedSolution, SolveInput, SolveResult } from "@/lib/types";
+import { exampleBySlug } from "@/lib/examples";
 
-const STAGES = ["Reading the problem", "Solving every step", "Verifying each line", "Substituting the answer back in", "Matching prerequisite lessons"];
+const STAGES = ["Billy is reading the problem", "Working every step", "Re-checking each line", "Plugging the answer back in", "Matching prerequisite lessons"];
 
 export function StudioView() {
   const { saveSolution, moveSolution, folders, recordActivity } = useData();
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<SolveResult | null>(null);
+  const example = exampleBySlug(useSearchParams().get("example"));
+  const [result, setResult] = useState<SolveResult | null>(example?.result ?? null);
   const [saved, setSaved] = useState<SavedSolution | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -52,8 +55,8 @@ export function StudioView() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-semibold">Math Studio</h1>
-          <p className="mt-1 text-muted">One problem at a time. Photograph it, draw it, or type it.</p>
+          <h1 className="page-title">Solve a problem</h1>
+          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example from Billy. Read the reasons, not just the lines." : "One problem at a time. Photograph it, draw it, or type it."}</p>
         </div>
         {result && (
           <button type="button" className="btn-ghost" onClick={() => setResult(null)}>
@@ -71,7 +74,7 @@ export function StudioView() {
           <LoaderCircle className="h-5 w-5 animate-spin text-accent" />
           <div>
             <div className="font-medium">{STAGES[stage]}</div>
-            <div className="text-xs text-muted">Two passes: solve, then an independent check of every line. This takes 15 to 40 seconds.</div>
+            <div className="text-xs text-muted">Two passes: Billy solves it, then checks every line independently. Allow 15 to 40 seconds.</div>
           </div>
         </div>
       )}

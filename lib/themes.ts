@@ -13,6 +13,8 @@ export interface ThemeTokens {
   danger: string;
   warning: string;
   grid: string;
+  /** Base color for elevation shadows. */
+  shadow: string;
   scheme: "light" | "dark";
 }
 
@@ -27,18 +29,19 @@ export const THEMES: ThemeDef[] = [
     id: "paper",
     name: "Clean Paper Light",
     tokens: {
-      bg: "#f7f6f2",
+      bg: "#f4f6fa",
       surface: "#ffffff",
-      surface2: "#efede6",
-      text: "#1c1b19",
-      muted: "#6b6862",
-      border: "#dcd8cf",
-      accent: "#1d4ed8",
+      surface2: "#eaeef5",
+      text: "#14213d",
+      muted: "#56607a",
+      border: "#cfd7e4",
+      accent: "#2346d6",
       accentFg: "#ffffff",
-      success: "#15803d",
-      danger: "#b91c1c",
-      warning: "#b45309",
-      grid: "#e6e2d8",
+      success: "#1d7a4c",
+      danger: "#c8322b",
+      warning: "#9a5a06",
+      grid: "#dfe6f1",
+      shadow: "#14213d",
       scheme: "light",
     },
   },
@@ -46,18 +49,19 @@ export const THEMES: ThemeDef[] = [
     id: "chalkboard",
     name: "Midnight Chalkboard Dark",
     tokens: {
-      bg: "#0f1714",
-      surface: "#16211d",
-      surface2: "#1e2c27",
-      text: "#ecf2ee",
-      muted: "#97a8a0",
-      border: "#2c3d36",
-      accent: "#f5d76e",
-      accentFg: "#1a1a1a",
-      success: "#6ee7a8",
-      danger: "#fca5a5",
-      warning: "#fcd34d",
-      grid: "#22322c",
+      bg: "#17241f",
+      surface: "#1f2f29",
+      surface2: "#283b34",
+      text: "#eef3ea",
+      muted: "#a9bab0",
+      border: "#3d5349",
+      accent: "#f2d16b",
+      accentFg: "#17241f",
+      success: "#8fe3b0",
+      danger: "#ff9d90",
+      warning: "#f6c768",
+      grid: "#2b3f37",
+      shadow: "#000000",
       scheme: "dark",
     },
   },
@@ -65,18 +69,19 @@ export const THEMES: ThemeDef[] = [
     id: "violet",
     name: "Royal Violet Purple",
     tokens: {
-      bg: "#151027",
-      surface: "#1e1736",
-      surface2: "#2a2048",
-      text: "#f1edff",
-      muted: "#a89fc9",
-      border: "#3a2f60",
-      accent: "#a78bfa",
-      accentFg: "#140d2b",
-      success: "#86efac",
-      danger: "#fda4af",
-      warning: "#fcd34d",
-      grid: "#2a2148",
+      bg: "#15112a",
+      surface: "#1f1939",
+      surface2: "#2a2250",
+      text: "#f3efff",
+      muted: "#b3aad8",
+      border: "#443a70",
+      accent: "#b9a0ff",
+      accentFg: "#15112a",
+      success: "#8fe8b4",
+      danger: "#ffa3b5",
+      warning: "#f8cf6f",
+      grid: "#2a2249",
+      shadow: "#000000",
       scheme: "dark",
     },
   },
@@ -84,18 +89,19 @@ export const THEMES: ThemeDef[] = [
     id: "sage",
     name: "Forest Sage Green",
     tokens: {
-      bg: "#eef2ec",
-      surface: "#f9fbf7",
-      surface2: "#e1e8dc",
-      text: "#1b261c",
-      muted: "#5c6b5d",
-      border: "#c9d4c3",
-      accent: "#2f6b3a",
+      bg: "#edf2eb",
+      surface: "#fbfdf9",
+      surface2: "#e0e9dc",
+      text: "#17271b",
+      muted: "#506352",
+      border: "#bfcfbb",
+      accent: "#2a6638",
       accentFg: "#ffffff",
-      success: "#2f6b3a",
-      danger: "#a3332b",
-      warning: "#a16207",
-      grid: "#d9e2d3",
+      success: "#2a6638",
+      danger: "#b0352c",
+      warning: "#8a5a06",
+      grid: "#d6e1d1",
+      shadow: "#17271b",
       scheme: "light",
     },
   },
@@ -105,16 +111,17 @@ export const THEMES: ThemeDef[] = [
     tokens: {
       bg: "#ffffff",
       surface: "#ffffff",
-      surface2: "#f0f0f0",
+      surface2: "#eeeeee",
       text: "#000000",
-      muted: "#333333",
+      muted: "#2e2e2e",
       border: "#000000",
-      accent: "#000000",
+      accent: "#0033a0",
       accentFg: "#ffffff",
-      success: "#006400",
-      danger: "#b00000",
-      warning: "#7a4a00",
-      grid: "#cccccc",
+      success: "#005a1e",
+      danger: "#a30000",
+      warning: "#6b4000",
+      grid: "#bdbdbd",
+      shadow: "#000000",
       scheme: "light",
     },
   },
@@ -127,9 +134,9 @@ export interface CustomColors {
 }
 
 export const DEFAULT_CUSTOM: CustomColors = {
-  bg: "#fdfaf3",
-  text: "#222222",
-  accent: "#c2410c",
+  bg: "#f3f7f9",
+  text: "#102a33",
+  accent: "#0e7c86",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -169,6 +176,7 @@ export function customTokens(c: CustomColors): ThemeTokens {
     danger: dark ? "#fca5a5" : "#b91c1c",
     warning: dark ? "#fcd34d" : "#b45309",
     grid: mix(c.bg, c.text, 0.1),
+    shadow: dark ? "#000000" : c.text,
     scheme: dark ? "dark" : "light",
   };
 }
@@ -192,6 +200,7 @@ export function applyTokens(t: ThemeTokens) {
   r.style.setProperty("--danger", t.danger);
   r.style.setProperty("--warning", t.warning);
   r.style.setProperty("--grid", t.grid);
+  r.style.setProperty("--shadow", t.shadow ?? (t.scheme === "dark" ? "#000000" : t.text));
   r.style.colorScheme = t.scheme;
 }
 
@@ -210,7 +219,7 @@ var id=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||"paper";
 var t=T[id];
 if(id==="custom"){t=JSON.parse(localStorage.getItem(${JSON.stringify(CUSTOM_TOKENS_KEY)})||"null");}
 if(!t)t=T.paper;
-var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid"};
-for(var k in m)r.style.setProperty(m[k],t[k]);r.style.colorScheme=t.scheme;r.dataset.theme=id;
+var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
+for(var k in m)if(t[k])r.style.setProperty(m[k],t[k]);r.style.colorScheme=t.scheme;r.dataset.theme=id;
 }catch(e){}})();`;
 }

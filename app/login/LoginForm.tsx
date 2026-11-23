@@ -20,7 +20,7 @@ export function LoginForm() {
   if (!sb) {
     return (
       <div className="card mx-auto max-w-md p-6">
-        <h1 className="font-serif text-2xl font-semibold">Accounts are not configured</h1>
+        <h1 className="page-title">Accounts are not configured</h1>
         <p className="mt-2 text-sm text-muted">
           Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable sign-in. Guest mode keeps working and
           saves everything on this device.
@@ -32,7 +32,7 @@ export function LoginForm() {
   if (user) {
     return (
       <div className="card mx-auto max-w-md p-6">
-        <h1 className="font-serif text-2xl font-semibold">Signed in</h1>
+        <h1 className="page-title">Signed in</h1>
         <p className="mt-2 text-sm text-muted">{user.email}</p>
         <div className="mt-4 flex gap-2">
           <button className="btn-primary" onClick={() => router.push("/history")}>
@@ -81,7 +81,7 @@ export function LoginForm() {
 
   return (
     <div className="card mx-auto max-w-md p-6">
-      <h1 className="font-serif text-2xl font-semibold">{mode === "signin" ? "Sign in" : "Create an account"}</h1>
+      <h1 className="page-title">{mode === "signin" ? "Sign in" : "Create an account"}</h1>
       <p className="mt-1 text-sm text-muted">Anything you saved as a guest moves into your account automatically.</p>
 
       <button type="button" onClick={google} disabled={busy} className="btn-ghost mt-5 w-full">

@@ -1,8 +1,13 @@
 "use client";
 
-import "katex/dist/katex.min.css";
-import { BlockMath, InlineMath } from "react-katex";
-import { Fragment } from "react";
+import katex from "katex";
+import { Fragment, useMemo } from "react";
+
+/*
+ * Math is rendered with the top-level katex package so the generated HTML always matches the
+ * katex.min.css imported in app/layout.tsx. (react-katex bundled its own older KaTeX, whose class
+ * names no longer match the stylesheet, which broke subscripts and other sized elements.)
+ */
 
 function cleanLatex(s: string): string {
   return s
@@ -14,24 +19,39 @@ function cleanLatex(s: string): string {
     .trim();
 }
 
+const cache = new Map<string, string | null>();
+
+function render(latex: string, displayMode: boolean): string | null {
+  const key = (displayMode ? "D" : "I") + latex;
+  if (cache.has(key)) return cache.get(key)!;
+  let html: string | null;
+  try {
+    html = katex.renderToString(latex, { displayMode, throwOnError: true, strict: "ignore", trust: false, output: "htmlAndMathml" });
+  } catch {
+    html = null;
+  }
+  if (cache.size > 2000) cache.clear();
+  cache.set(key, html);
+  return html;
+}
+
+/** Shown only if KaTeX cannot parse the input: readable text, never raw backslash commands. */
 function Fallback({ latex }: { latex: string }) {
-  return <span className="math-error">{latex.replace(/\\/g, " ").replace(/[{}]/g, "")}</span>;
+  return <span className="math-error">{latex.replace(/\\[a-zA-Z]+/g, " ").replace(/[{}\\]/g, "").replace(/\s+/g, " ").trim()}</span>;
 }
 
 export function MathBlock({ latex, className }: { latex: string; className?: string }) {
-  const m = cleanLatex(latex);
+  const m = cleanLatex(latex ?? "");
+  const html = useMemo(() => (m ? render(m, true) : null), [m]);
   if (!m) return null;
-  return (
-    <div className={className}>
-      <BlockMath math={m} renderError={() => <Fallback latex={m} />} />
-    </div>
-  );
+  return <div className={className}>{html ? <div dangerouslySetInnerHTML={{ __html: html }} /> : <Fallback latex={m} />}</div>;
 }
 
 export function MathInline({ latex }: { latex: string }) {
-  const m = cleanLatex(latex);
+  const m = cleanLatex(latex ?? "");
+  const html = useMemo(() => (m ? render(m, false) : null), [m]);
   if (!m) return null;
-  return <InlineMath math={m} renderError={() => <Fallback latex={m} />} />;
+  return html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : <Fallback latex={m} />;
 }
 
 type Segment = { type: "text" | "inline" | "block"; value: string };

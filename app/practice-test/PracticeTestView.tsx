@@ -130,8 +130,8 @@ export function PracticeTestView() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-semibold">Practice Test Builder</h1>
-        <p className="mt-1 text-muted">Give me 1 to 10 problems from your homework. I will write a test on the same skills.</p>
+        <h1 className="page-title">Practice test</h1>
+        <p className="mt-1 text-muted">Give me 1 to 10 problems from your homework. Billy writes a graded test on the same skills.</p>
       </header>
 
       <section className="card space-y-4 p-5">
@@ -274,7 +274,7 @@ function TestRunner({
       <header className="no-print flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="label">{test.level === "ap" ? "AP Level" : test.level === "hard" ? "Hard Level" : "Same Level"}</p>
-          <h1 className="font-serif text-3xl font-semibold">{test.title}</h1>
+          <h1 className="page-title">{test.title}</h1>
           <p className="mt-1 text-sm text-muted">
             {test.questions.length} questions, {test.max_score} points. Show your work on paper.
           </p>
@@ -313,7 +313,7 @@ function TestRunner({
       )}
 
       <div className="print-area space-y-4">
-        <h1 className="hidden font-serif text-xl font-semibold print:block">{test.title}</h1>
+        <h1 className="hidden display-tight text-xl font-semibold print:block">{test.title}</h1>
         <p className="hidden text-sm print:block">Name: ______________________ Date: ____________ Score: ______ / {test.max_score}</p>
         {test.questions.map((q, n) => {
           const r = test.responses[q.id] ?? "";

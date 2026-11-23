@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #faf9f6;
+  --bg: #fcfbff;
   --surface: #ffffff;
-  --surface-2: #f3f1ec;
-  --text: #141413;
-  --muted: #5f5b53;
-  --border: rgba(20, 20, 19, 0.08);
-  --accent: #1d4ed8;
+  --surface-2: #f3f1fd;
+  --text: #1e1b33;
+  --muted: #6a6782;
+  --border: rgba(76, 61, 160, 0.10);
+  --accent: #5b4cf5;
   --accent-fg: #ffffff;
-  --highlight: #d97706;
-  --success: #15803d;
-  --danger: #b42318;
-  --warning: #b45309;
-  --grid: #eeebe5;
-  --shadow: #141413;
+  --highlight: #ff7a45;
+  --success: #16a34a;
+  --danger: #dc2f45;
+  --warning: #d97706;
+  --grid: #eeecfa;
+  --shadow: #3b2f8f;
 
   /* Layered elevation: a contact shadow, a short key shadow, and a wide ambient one. */
   --elev-1: 0 1px 1px color-mix(in srgb, var(--shadow) 3%, transparent), 0 2px 4px -1px color-mix(in srgb, var(--shadow) 4%, transparent);
@@ -24,7 +24,7 @@
     0 32px 64px -24px color-mix(in srgb, var(--shadow) 18%, transparent);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
-  --radius: 14px;
+  --radius: 18px;
 }
 
 @theme inline {
@@ -131,7 +131,7 @@
 
 /* Component utilities ------------------------------------------------------------------------------ */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-[11px] px-4 py-2.5 text-sm font-semibold select-none disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold select-none disabled:cursor-not-allowed disabled:opacity-50;
   letter-spacing: -0.005em;
   transition:
     background-color 160ms var(--ease-out),
@@ -147,11 +147,11 @@
 @utility btn-primary {
   @apply btn bg-accent text-accent-fg;
   box-shadow:
-    inset 0 -2px 0 color-mix(in srgb, black 22%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
-    0 1px 2px color-mix(in srgb, var(--accent) 30%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--accent) 55%, transparent);
   &:not(:disabled):hover {
     background: color-mix(in srgb, var(--accent) 90%, black);
+    transform: translateY(-1px);
   }
   &:not(:disabled):active {
     box-shadow: inset 0 0 0 color-mix(in srgb, black 22%, transparent);
@@ -172,7 +172,7 @@
   }
 }
 @utility btn-sm {
-  @apply rounded-[9px] px-2.5 py-1.5 text-xs;
+  @apply rounded-full px-3 py-1.5 text-xs;
 }
 @utility card {
   @apply border border-line bg-surface;
@@ -196,7 +196,7 @@
   }
 }
 @utility input {
-  @apply w-full rounded-[11px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted;
+  @apply w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted;
   transition:
     border-color 150ms var(--ease-out),
     box-shadow 150ms var(--ease-out);
@@ -478,4 +478,18 @@
 }
 .worksheet .katex-display {
   margin: 0.15em 0 0;
+}
+
+/* Friendly page wash: two soft color glows behind the content in light themes. */
+@utility soft-glow {
+  background:
+    radial-gradient(60rem 28rem at 12% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at 95% 0%, color-mix(in srgb, var(--highlight) 9%, transparent), transparent 70%);
+}
+/* Tinted icon chip. Set --chip to recolor. */
+@utility chip-icon {
+  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px];
+  --chip: var(--accent);
+  color: var(--chip);
+  background: color-mix(in srgb, var(--chip) 12%, var(--surface));
 }

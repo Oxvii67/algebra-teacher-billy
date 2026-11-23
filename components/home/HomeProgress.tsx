@@ -45,7 +45,7 @@ export function HomeProgress() {
   if (!ready) return null;
 
   return (
-    <section className="grid gap-8 border-t border-text pt-6 md:grid-cols-12" aria-labelledby="progress-title">
+    <section className="card grid gap-8 p-6 md:grid-cols-12 md:p-8" aria-labelledby="progress-title">
       <div className="md:col-span-4">
         <h2 id="progress-title" className="font-display text-2xl font-semibold tracking-[-0.03em]">
           Your progress

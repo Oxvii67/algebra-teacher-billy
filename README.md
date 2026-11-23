@@ -26,3 +26,5 @@ The app works without Supabase (guest mode, stored in `localStorage`) and withou
 ## Model note
 
 The default model is `gemini-3.6-flash`. The free tier meters each model separately, so `lib/server/ai.ts` rotates through a pool (3.6, 3.8, 3.5-lite, 3.7, 3.5, 3.1-lite flash) and benches any model that hits its quota, is overloaded, or hangs, so later requests skip it. Set `GEMINI_MODEL` to change which model is tried first.
+
+When every Gemini model is out, requests fall back to Groq (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b` for photos) and then OpenRouter free models (`lib/server/backup.ts`). Each provider turns on only when its key is set: `GROQ_API_KEY` from https://console.groq.com/keys and `OPENROUTER_API_KEY` from https://openrouter.ai/settings/keys. Both are server-only.

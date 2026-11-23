@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { backupComplete, hasBackups } from "./backup";
 
 /**
  * Server-side Gemini helpers. The API key is read by route handlers in app/api/** and passed in;
@@ -110,13 +111,13 @@ function minutesUntilFree(): number {
   return Math.max(1, Math.ceil((soonest - Date.now()) / 60_000));
 }
 
-/** Walk the pool, skipping benched models, until one answers. */
-async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>): Promise<T> {
-  const start = Date.now();
+/** Walk the pool, skipping benched models, until one answers or the deadline nears. */
+async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>, deadline: number): Promise<T> {
   const all = pool();
   const candidates = all.filter((m) => (bench.get(m) ?? 0) <= Date.now());
   for (const model of candidates) {
-    const left = TOTAL_BUDGET_MS - (Date.now() - start);
+    // Leave room for a backup provider when one is configured.
+    const left = deadline - Date.now() - (hasBackups() ? 15_000 : 0);
     if (left < 5_000) break;
     const ms = Math.min(model === all[0] ? PRIMARY_TIMEOUT_MS : FALLBACK_TIMEOUT_MS, left);
     try {
@@ -213,6 +214,27 @@ function wrapError(err: unknown): AiError {
   return new AiError("The AI request failed. Try again in a moment.");
 }
 
+/**
+ * Gemini first; if every Gemini model fails, one pass through the backup providers. When the
+ * backups fail too, the Gemini error is reported, since it says when the allowance frees up.
+ */
+async function withBackup(
+  gemini: () => Promise<string>,
+  backup: { system: string; contents: Turn[]; temperature: number; schema?: unknown; deadline: number },
+): Promise<string> {
+  try {
+    return await gemini();
+  } catch (err) {
+    if (!hasBackups()) throw err;
+    try {
+      return await backupComplete(backup);
+    } catch (backupErr) {
+      console.error(`[backup] no backup answered: ${backupErr instanceof Error ? backupErr.message : String(backupErr)}`);
+      throw err;
+    }
+  }
+}
+
 export async function generateJson<T>(
   apiKey: string,
   opts: {
@@ -227,24 +249,32 @@ export async function generateJson<T>(
   const contents = (opts.contents.length && "role" in (opts.contents[0] as object)
     ? opts.contents
     : [{ role: "user", parts: opts.contents as Part[] }]) as Turn[];
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
   // A second pass is spent only on output that came back unusable, never on upstream errors.
   for (let attempt = 0; ; attempt++) {
     try {
-      const res = await withModel((model, abortSignal) =>
-        ai.models.generateContent({
-          model,
-          contents,
-          config: {
-            abortSignal,
-            systemInstruction: opts.system,
-            responseMimeType: "application/json",
-            responseJsonSchema: opts.schema,
-            temperature: opts.temperature ?? 0.2,
-            thinkingConfig: thinkingFor(model, opts.thinkingBudget),
-          },
-        }),
+      const text = await withBackup(
+        async () => {
+          const res = await withModel(
+            (model, abortSignal) =>
+              ai.models.generateContent({
+                model,
+                contents,
+                config: {
+                  abortSignal,
+                  systemInstruction: opts.system,
+                  responseMimeType: "application/json",
+                  responseJsonSchema: opts.schema,
+                  temperature: opts.temperature ?? 0.2,
+                  thinkingConfig: thinkingFor(model, opts.thinkingBudget),
+                },
+              }),
+            deadline,
+          );
+          return res.text ?? "";
+        },
+        { system: opts.system, contents, temperature: opts.temperature ?? 0.2, schema: opts.schema, deadline },
       );
-      const text = res.text;
       if (!text) throw new MalformedOutput("The model returned an empty response.");
       return cleanDeep(parseJson<T>(text));
     } catch (err) {
@@ -261,20 +291,29 @@ export async function generateText(
   apiKey: string,
   opts: { system: string; contents: Turn[]; temperature?: number; thinkingBudget?: number },
 ): Promise<string> {
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
   try {
-    const res = await withModel((model, abortSignal) =>
-      client(apiKey).models.generateContent({
-        model,
-        contents: opts.contents,
-        config: {
-          abortSignal,
-          systemInstruction: opts.system,
-          temperature: opts.temperature ?? 0.5,
-          thinkingConfig: thinkingFor(model, opts.thinkingBudget),
-        },
-      }),
+    const text = await withBackup(
+      async () => {
+        const res = await withModel(
+          (model, abortSignal) =>
+            client(apiKey).models.generateContent({
+              model,
+              contents: opts.contents,
+              config: {
+                abortSignal,
+                systemInstruction: opts.system,
+                temperature: opts.temperature ?? 0.5,
+                thinkingConfig: thinkingFor(model, opts.thinkingBudget),
+              },
+            }),
+          deadline,
+        );
+        return res.text ?? "";
+      },
+      { system: opts.system, contents: opts.contents, temperature: opts.temperature ?? 0.5, deadline },
     );
-    return cleanText(res.text ?? "");
+    return cleanText(text);
   } catch (err) {
     throw wrapError(err);
   }

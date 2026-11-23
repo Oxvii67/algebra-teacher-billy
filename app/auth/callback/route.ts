@@ -30,7 +30,15 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     console.error(`[auth] code exchange failed: ${error.message}`);
-    // The PKCE verifier cookie lives on the domain sign-in started from; a different domain cannot finish it.
+    if (searchParams.get("flow") === "email" && /verifier/i.test(error.message)) {
+      // An email confirmation link opened in another browser or the mail app: Supabase has already
+      // confirmed the address, but only the browser that signed up holds the PKCE verifier.
+      // Send the student to sign in instead of showing an error.
+      const to = new URL("/login", origin);
+      to.searchParams.set("confirmed", "1");
+      if (dest !== "/binder") to.searchParams.set("next", dest);
+      return NextResponse.redirect(to);
+    }
     return fail(/verifier/i.test(error.message) ? "Start sign-in again from this page." : error.message);
   }
   return NextResponse.redirect(new URL(dest, origin));

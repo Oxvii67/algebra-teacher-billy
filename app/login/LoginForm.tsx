@@ -15,6 +15,10 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState<string | null>(() =>
+    params.get("confirmed") ? "Your email is confirmed. Sign in with your password." : null,
+  );
+  const [canResend, setCanResend] = useState(false);
   const [msg, setMsg] = useState<string | null>(() => {
     if (!params.get("error")) return null;
     const detail = params.get("error_description");
@@ -75,20 +79,44 @@ export function LoginForm() {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
+    setInfo(null);
+    setCanResend(false);
     if (mode === "signin") {
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) setMsg(error.message);
+      if (error && /not confirmed/i.test(error.message)) {
+        setInfo("Confirm your email first. Open the link we sent, then sign in here.");
+        setCanResend(true);
+      } else if (error) setMsg(/invalid login/i.test(error.message) ? "That email and password do not match an account." : error.message);
       else router.push(dest);
     } else {
       const { data, error } = await sb.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?flow=email&next=${encodeURIComponent(dest)}` },
       });
-      if (error) setMsg(error.message);
-      else if (!data.session) setMsg("Check your email to confirm the account, then sign in.");
-      else router.push(dest);
+      if (error) setMsg(/rate limit/i.test(error.message) ? "Too many sign-up emails were sent in the last hour. Try again later." : error.message);
+      else if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        // Supabase answers a repeat sign-up with a user that has no identities and sends no email.
+        setMode("signin");
+        setInfo("That email already has an account. Sign in with your password.");
+      } else if (!data.session) {
+        setInfo(`We sent a confirmation link to ${email}. Open it, then sign in here. Check spam if it is not in your inbox.`);
+        setCanResend(true);
+      } else router.push(dest);
     }
+    setBusy(false);
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    setMsg(null);
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?flow=email&next=${encodeURIComponent(dest)}` },
+    });
+    if (error) setMsg(/rate limit|security purposes/i.test(error.message) ? "The link was sent recently. Wait a minute, then try again." : error.message);
+    else setInfo(`A new link is on its way to ${email}.`);
     setBusy(false);
   };
 
@@ -143,7 +171,21 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete={mode === "signin" ? "current-password" : "new-password"}
         />
-        {msg && <p className="text-sm text-danger">{msg}</p>}
+        {info && (
+          <div className="rounded-[10px] border border-line bg-surface-2 px-3.5 py-3 text-sm" role="status">
+            <p>{info}</p>
+            {canResend && (
+              <button type="button" className="mt-2 font-medium text-accent hover:underline disabled:opacity-50" disabled={busy || !email} onClick={resend}>
+                Send the link again
+              </button>
+            )}
+          </div>
+        )}
+        {msg && (
+          <p className="text-sm text-danger" role="alert">
+            {msg}
+          </p>
+        )}
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
           {mode === "signin" ? "Sign in" : "Create account"}

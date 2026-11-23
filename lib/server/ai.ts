@@ -226,6 +226,8 @@ function parseJson<T>(raw: string): T {
 
 function wrapError(err: unknown): AiError {
   if (err instanceof AiError) return err;
+  // req.json() on a body that is not JSON: a client problem, not an AI failure.
+  if (err instanceof SyntaxError) return new AiError("The request could not be read. Refresh the page and try again.", 400);
   const msg = errText(err);
   const status = upstreamStatus(err);
   if (status === 401 || status === 403 || /API key not valid|PERMISSION_DENIED/i.test(msg)) {

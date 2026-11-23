@@ -1,4 +1,4 @@
-import { compile, parse, type MathNode } from "mathjs";
+import { ConstantNode, FunctionNode, OperatorNode, ParenthesisNode, parse, type MathNode } from "mathjs";
 
 export type Fn = (x: number, params: Record<string, number>) => number;
 
@@ -18,8 +18,36 @@ export interface ParsedLine {
 
 const RESERVED = new Set(["x", "y", "e", "E", "pi", "PI", "i", "Infinity", "NaN", "true", "false", "ln"]);
 
+const SUPERSCRIPT: Record<string, string> = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁻": "-" };
+
+/**
+ * |expr| to abs(expr). A bar opens when it starts the input or follows an operator, an opening
+ * bracket, a comma, an equals sign or another opening bar; otherwise it closes the innermost one.
+ */
+function absBars(s: string): string {
+  if (!s.includes("|")) return s;
+  let out = "";
+  let open = 0;
+  let prev = "";
+  for (const ch of s) {
+    if (ch === "|") {
+      if (open > 0 && !/[+\-*/^(,=<>|]/.test(prev) && prev !== "") {
+        out += ")";
+        open--;
+      } else {
+        out += "abs(";
+        open++;
+      }
+    } else out += ch;
+    if (ch.trim()) prev = ch === "|" ? (out.endsWith("abs(") ? "|" : ")") : ch;
+  }
+  return out + ")".repeat(open);
+}
+
 function preprocess(s: string): string {
-  return s
+  return absBars(
+    s.replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)/g, (m) => "^" + (m.length > 1 ? "(" : "") + [...m].map((c) => SUPERSCRIPT[c]).join("") + (m.length > 1 ? ")" : "")),
+  )
     .replace(/−/g, "-")
     .replace(/·|×/g, "*")
     .replace(/π/g, "pi")
@@ -53,10 +81,45 @@ function toReal(v: unknown): number {
   return NaN;
 }
 
-function makeFn(src: string): { fn: Fn; params: string[] } {
-  const node = parse(src);
+/** A single letter right before "(" is a variable times a bracket, not a function: 2x(x-1). */
+function implicitTimesBracket(src: string): string {
+  return src.replace(/(^|[^a-zA-Z_])([a-zA-Z])\s*\(/g, "$1$2*(");
+}
+
+/** The fraction p/q in an exponent, when it is written with constants: x^(1/3), x^(2/3). */
+function constantFraction(node: MathNode): [number, number] | null {
+  const n = (node as unknown as { type: string; content?: MathNode }).type === "ParenthesisNode" ? (node as ParenthesisNode).content : node;
+  const op = n as unknown as { type: string; op?: string; args?: MathNode[] };
+  if (op.type !== "OperatorNode" || op.op !== "/" || !op.args) return null;
+  const [a, b] = op.args as unknown as { type: string; value?: unknown }[];
+  if (a.type !== "ConstantNode" || b.type !== "ConstantNode") return null;
+  const p = Number(a.value);
+  const q = Number(b.value);
+  return Number.isInteger(p) && Number.isInteger(q) && q !== 0 ? [p, q] : null;
+}
+
+/** x^(p/q) with odd q is real for negative x (cube root of -8 is -2); mathjs returns a complex number. */
+function realOddRoots(node: MathNode): MathNode {
+  return node.transform((n) => {
+    const op = n as unknown as { type: string; op?: string; args?: MathNode[] };
+    if (op.type === "OperatorNode" && op.op === "^" && op.args) {
+      const frac = constantFraction(op.args[1]);
+      if (frac && Math.abs(frac[1]) % 2 === 1) {
+        const root = new FunctionNode("nthRoot", [realOddRoots(op.args[0]), new ConstantNode(Math.abs(frac[1]))]);
+        const pow = new OperatorNode("^", "pow", [root, new ConstantNode(Math.abs(frac[0]))]);
+        const signed = frac[0] * frac[1] < 0 ? new OperatorNode("/", "divide", [new ConstantNode(1), pow]) : pow;
+        return signed;
+      }
+    }
+    return n;
+  });
+}
+
+function makeFn(rawSrc: string): { fn: Fn; params: string[] } {
+  const src = implicitTimesBracket(rawSrc);
+  const node = realOddRoots(parse(src));
   const params = symbols(node);
-  const code = compile(src);
+  const code = node.compile();
   const scope: Record<string, unknown> = {};
   const fn: Fn = (x, p) => {
     for (const k of params) scope[k] = p[k] ?? 1;
@@ -90,6 +153,9 @@ function hasSymbol(node: MathNode, name: string): boolean {
 export function parseLine(raw: string): ParsedLine {
   const s = preprocess(raw);
   if (!s) return { curves: [], vertical: null, params: [], error: null };
+  if (/[<>≤≥]/.test(s)) {
+    return { curves: [], vertical: null, params: [], error: "Inequalities are not supported yet. Graph the boundary with = instead." };
+  }
   try {
     const eq = s.split(/(?<![<>!=])=(?!=)/);
     if (eq.length > 2) return { curves: [], vertical: null, params: [], error: "Use at most one equals sign." };

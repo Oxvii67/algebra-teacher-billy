@@ -111,6 +111,17 @@ export function PracticeTestView() {
           else data = ev;
         }
       }
+      // A final event without a trailing newline still counts.
+      const tail = (buf + dec.decode()).trim();
+      if (tail) {
+        try {
+          const ev = JSON.parse(tail) as { type: string; error?: string };
+          if (ev.type === "error") throw new Error(ev.error);
+          if (ev.type === "result") data = ev as unknown as typeof data;
+        } catch (err) {
+          if (err instanceof Error && !(err instanceof SyntaxError)) throw err;
+        }
+      }
       if (!data) throw new Error("The connection closed before the test was finished. Try again.");
       const t: PracticeTest = {
         id: uid(),

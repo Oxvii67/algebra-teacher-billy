@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const apiKey = requireKey(process.env.GEMINI_API_KEY);
     const body = (await req.json()) as { messages?: ChatMessage[]; problemLatex?: string };
-    const messages = (body.messages ?? [])
+    const messages = (Array.isArray(body.messages) ? body.messages : [])
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
       .slice(-24)
       .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));

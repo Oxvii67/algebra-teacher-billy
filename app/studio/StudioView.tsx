@@ -61,6 +61,8 @@ export function StudioView() {
   useEffect(() => {
     if (!q || startedQ.current || example) return;
     startedQ.current = true;
+    // Drop ?q= so a refresh or the back button does not solve (and spend quota on) it again.
+    window.history.replaceState(null, "", "/studio");
     void solve({ kind: "text", latex: q });
     // solve is stable for this purpose; run once per arrival
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -18,7 +18,13 @@ function splitTop(s: string): string[] {
   return out.map((x) => x.trim()).filter(Boolean);
 }
 
+/** Words students use for "no solution" and "does not exist", mapped to the keys' canonical forms. */
+const NO_SOLUTION = /^\s*(no(\s+real)?\s+(solutions?|roots?|zeros?)|∅|\\emptyset|\\varnothing|\{\s*\}|none)\s*\.?\s*$/i;
+const DOES_NOT_EXIST = /^\s*(does\s*not\s*exist|doesn'?t\s*exist|dne|undefined)\s*\.?\s*$/i;
+
 export function normalizeAnswer(raw: string): string {
+  if (NO_SOLUTION.test(raw)) return "none";
+  if (DOES_NOT_EXIST.test(raw)) return "dne";
   return raw
     .toLowerCase()
     .replace(/\\left|\\right|\\,|\;|\\!/g, "")
@@ -31,6 +37,7 @@ export function normalizeAnswer(raw: string): string {
     .replace(/\\ge|≥/g, ">=")
     .replace(/−/g, "-")
     .replace(/\b(or|and)\b|;/g, ",")
+    .replace(/(^|,)\s*[a-z]\s*\(\s*[a-z]\s*\)\s*=\s*/g, "$1") // f(x) = ...
     .replace(/(^|,)\s*[a-z]\s*=\s*/g, "$1")
     .replace(/^\{|\}$/g, "")
     .replace(/\s+/g, "")
@@ -87,6 +94,15 @@ function close(a: number, b: number) {
 
 function itemsEqual(a: string, b: string): boolean {
   if (a === b) return true;
+  // Points and intervals: same brackets, then compare entry by entry, so (3.0,-2) matches (3,-2).
+  const wrap = /^([([])(.*)([)\]])$/;
+  const ma = wrap.exec(a);
+  const mb = wrap.exec(b);
+  if (ma && mb && ma[1] === mb[1] && ma[3] === mb[3]) {
+    const ia = splitTop(ma[2]);
+    const ib = splitTop(mb[2]);
+    if (ia.length > 1 && ia.length === ib.length) return ia.every((x, i) => itemsEqual(x, ib[i]));
+  }
   const vars = [...new Set([...freeVars(a), ...freeVars(b)])];
   if (vars.length === 0) {
     const ca = complexKey(a);

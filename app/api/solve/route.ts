@@ -20,7 +20,8 @@ interface Body {
 function problemParts(input: NonNullable<Body["input"]>): Part[] {
   const note = input.note?.trim() ? `\nStudent instruction: ${input.note.trim().slice(0, 300)}` : "";
   if (input.kind === "image") {
-    if (typeof input.dataUrl !== "string" || input.dataUrl.length > MAX_IMAGE_CHARS) throw Object.assign(new Error("Image is too large."), { status: 400 });
+    if (typeof input.dataUrl !== "string") throw Object.assign(new Error("The image did not upload. Add it again."), { status: 400 });
+    if (input.dataUrl.length > MAX_IMAGE_CHARS) throw Object.assign(new Error("Image is too large."), { status: 400 });
     return [{ text: `The student's problem is in this image.${note}` }, imagePart(input.dataUrl)];
   }
   const latex = String(input.latex ?? "").slice(0, 4000);

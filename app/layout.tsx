@@ -7,12 +7,12 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Notice } from "@/components/shell/Notice";
 import { DataProvider } from "@/lib/data/DataProvider";
 import { themeBootScript } from "@/lib/themes";
+import { SITE_URL } from "@/lib/site";
 
 const head = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-head", display: "swap" });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 const code = JetBrains_Mono({ subsets: ["latin"], variable: "--font-code", display: "swap" });
 
-const SITE_URL = "https://www.algebrateacher.xyz";
 const SITE_TITLE = "Algebra Teacher Billy: Free Step-by-Step Math Tutor, Algebra 1 to AP Calculus";
 const SITE_DESCRIPTION =
   "Algebra Teacher Billy is a free AI math tutor for every course from pre-algebra through AP Precalculus, AP Calculus AB and BC, and AP Statistics. Enter any problem to get every step worked out and verified, build auto-graded practice tests, graph functions with sliders, and find the right video lesson for the skill you need to fix first.";

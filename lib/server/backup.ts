@@ -1,4 +1,5 @@
 import type { Part, Turn } from "./ai";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 /**
  * Backup providers, used only after every Gemini model is out of quota, overloaded, or slow.
@@ -94,7 +95,7 @@ export async function backupComplete(opts: {
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
-          ...(b.provider === "openrouter" ? { "HTTP-Referer": "https://www.algebrateacher.xyz", "X-Title": "Algebra Teacher Billy" } : {}),
+          ...(b.provider === "openrouter" ? { "HTTP-Referer": SITE_URL, "X-Title": SITE_NAME } : {}),
         },
         body: JSON.stringify({
           model: b.model,

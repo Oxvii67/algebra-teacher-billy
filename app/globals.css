@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface-2: #efede6;
+  --text: #1c1b19;
+  --muted: #6b6862;
+  --border: #dcd8cf;
+  --accent: #1d4ed8;
+  --accent-fg: #ffffff;
+  --success: #15803d;
+  --danger: #b91c1c;
+  --warning: #b45309;
+  --grid: #e6e2d8;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-grid: var(--grid);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.katex {
+  font-size: 1.08em;
+}
+.katex-display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+.math-error {
+  color: var(--danger);
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-accent text-accent-fg hover:opacity-90;
+}
+
+@utility btn-ghost {
+  @apply btn border border-line bg-surface text-text hover:bg-surface-2;
+}
+
+@utility btn-sm {
+  @apply px-2.5 py-1.5 text-xs;
+}
+
+@utility card {
+  @apply rounded-xl border border-line bg-surface;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted focus:border-accent;
+}
+
+@utility label {
+  @apply text-xs font-semibold uppercase tracking-wide text-muted;
+}
+
+@utility tab {
+  @apply inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text;
+}
+
+@utility tab-active {
+  @apply bg-surface text-text shadow-sm;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .print-area {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  @page {
+    margin: 0.5in;
+  }
+}

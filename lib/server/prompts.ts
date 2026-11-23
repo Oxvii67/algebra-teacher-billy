@@ -59,3 +59,19 @@ export const DRILL_INSTRUCTIONS = `Task: create a "Spot the Teacher's Mistake" d
 - mistakeIndex is the 0-based index of the wrong step. Step 0 is the original problem and is never the mistake.
 - trap names the error in a few words. explanation says precisely why the step is wrong (prose with $math$). correctedLatex is the correct version of that line, and correctAnswerLatex is the correct final answer.
 - Before answering, re-derive the problem yourself and confirm that exactly one step is wrong and that it is the step at mistakeIndex.`;
+
+export const TEST_INSTRUCTIONS = `Task: build a practice test from the student's source problems.
+- Read every source problem (images and/or text). For EACH source problem write exactly one NEW test question on the same skill. Never copy a source problem verbatim.
+- Level "same": same difficulty and structure, different numbers. Level "hard": one step deeper (non-monic leading coefficients, extraneous roots, extra step, parameters). Level "ap": AP-exam style rigor, multi-step reasoning, justification, or context, still solvable by hand.
+- Use type "multiple_choice" for about a third of the questions (exactly 4 choices, with distractors built from real student mistakes; answer is the 0-based index as a string, e.g. "2"). Use "free_response" for the rest.
+- For free_response: answer is the canonical answer in mathjs syntax: a single value or expression, or a comma-separated list of values for multiple solutions (e.g. "1/2, 3" or "3*x^2 - 2" or "2 + 3i"). Use "none" if there is no solution. For intervals use the form "(-inf, 4]". instructions must tell the student exactly what to enter, for example "Enter all solutions separated by commas."
+- answerLatex is the answer in LaTeX. choices are LaTeX strings with no dollar signs.
+- solution: the complete step-by-step worked solution, never skipping a step.
+- points: 1 to 5 based on difficulty. skill: a few words.
+- title: a short test title naming the topics.`;
+
+export const TEST_VERIFY_INSTRUCTIONS = `Task: you are verifying a practice test written by another teacher. For every question:
+- Solve it yourself from scratch. If the stated answer, answerLatex, the marked correct choice, or any solution step is wrong, fix it.
+- Make sure exactly one multiple-choice option is correct and that the answer index points to it.
+- Make sure free_response answers are valid mathjs syntax as specified, and that the instructions tell the student what format to use.
+Return the full corrected test in the same schema.`;

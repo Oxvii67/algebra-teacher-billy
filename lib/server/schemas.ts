@@ -108,3 +108,29 @@ export const DRILL_SCHEMA = {
   },
   required: ["topic", "problemLatex", "steps", "mistakeIndex", "trap", "explanation", "correctedLatex", "correctAnswerLatex"],
 } as const;
+
+export const TEST_SCHEMA = {
+  type: "object",
+  properties: {
+    title: str,
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          promptLatex: str,
+          instructions: str,
+          type: { type: "string", enum: ["multiple_choice", "free_response"] },
+          choices: strArr,
+          answer: str,
+          answerLatex: str,
+          points: { type: "integer" },
+          solution: { type: "array", items: STEP_SCHEMA },
+          skill: str,
+        },
+        required: ["promptLatex", "instructions", "type", "choices", "answer", "answerLatex", "points", "solution", "skill"],
+      },
+    },
+  },
+  required: ["title", "questions"],
+} as const;

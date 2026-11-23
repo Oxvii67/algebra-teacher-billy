@@ -35,7 +35,7 @@ export function LoginForm() {
         <h1 className="page-title">Signed in</h1>
         <p className="mt-2 text-sm text-muted">{user.email}</p>
         <div className="mt-4 flex gap-2">
-          <button className="btn-primary" onClick={() => router.push("/history")}>
+          <button className="btn-primary" onClick={() => router.push("/binder")}>
             Go to History
           </button>
           <button className="btn-ghost" onClick={() => signOut()}>
@@ -53,7 +53,7 @@ export function LoginForm() {
     if (mode === "signin") {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) setMsg(error.message);
-      else router.push("/history");
+      else router.push("/binder");
     } else {
       const { data, error } = await sb.auth.signUp({
         email,
@@ -62,7 +62,7 @@ export function LoginForm() {
       });
       if (error) setMsg(error.message);
       else if (!data.session) setMsg("Check your email to confirm the account, then sign in.");
-      else router.push("/history");
+      else router.push("/binder");
     }
     setBusy(false);
   };

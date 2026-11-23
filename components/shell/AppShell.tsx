@@ -11,7 +11,7 @@ import { useData } from "@/lib/data/DataProvider";
 import { StudyMeter } from "./StudyMeter";
 
 /** Shown inline in the desktop header; everything else lives under More. */
-const TOP = ["/studio", "/tutor", "/practice-test", "/calculator", "/videos"];
+const TOP = ["/studio", "/tutor", "/practice-test", "/calculator", "/videos", "/binder"];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
@@ -113,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Wordmark />
           </Link>
 
-          <nav className="hidden h-full items-center gap-0.5 md:flex" aria-label="Main">
+          <nav className="hidden h-full items-center gap-0.5 lg:flex" aria-label="Main">
             {top.map((item) => {
               const active = isActive(pathname, item.href);
               return (
@@ -128,19 +128,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-1">
             <StudyMeter variant="pill" />
             <ThemeQuick />
-            <span className="hidden md:block">
+            <span className="hidden lg:block">
               <AccountLink />
             </span>
           </div>
         </div>
       </header>
 
-      <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:px-8 md:pb-16 md:pt-10">
+      <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:px-8 lg:pb-16 md:pt-10">
         <div className="mx-auto w-full max-w-6xl">{children}</div>
       </main>
 
       <nav
-        className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+        className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         aria-label="Main"
       >
         <div className="grid grid-cols-6">
@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       {sheetOpen && (
-        <div className="no-print fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="All tools">
+        <div className="no-print fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="All tools">
           <button type="button" className="absolute inset-0 bg-black/40" onClick={() => setSheetOpen(false)} aria-label="Close menu" />
           <div className="step-in absolute inset-x-0 bottom-0 rounded-t-[22px] border-t border-line bg-surface p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-elev-3">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" aria-hidden="true" />

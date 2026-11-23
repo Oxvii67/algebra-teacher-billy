@@ -34,7 +34,7 @@ export function HistoryView() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">History and folders</h1>
+          <h1 className="page-title">Binder</h1>
           <p className="mt-1 text-sm text-muted">
             {mode === "cloud" ? "Synced to your account." : "Saved on this device. Sign in to sync across devices."}
           </p>

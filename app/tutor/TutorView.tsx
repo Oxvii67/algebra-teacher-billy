@@ -76,7 +76,7 @@ export function TutorView() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-11rem)] flex-col gap-4 md:h-[calc(100dvh-10.5rem)]">
+    <div className="flex h-[calc(100dvh-11rem)] flex-col gap-4 lg:h-[calc(100dvh-10.5rem)]">
       <header className="flex items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Tutoring session</p>

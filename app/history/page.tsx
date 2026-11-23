@@ -1,7 +1,6 @@
-import { HistoryView } from "./HistoryView";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "History and folders" };
-
+/** The history page became the Binder. Old links and bookmarks land there. */
 export default function HistoryPage() {
-  return <HistoryView />;
+  redirect("/binder");
 }

@@ -120,12 +120,22 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const w = Math.max(280, Math.round(entry.contentRect.width));
-      setSize({ w, h: Math.round(Math.min(680, Math.max(360, w * 0.68))) });
-    });
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const w = Math.max(280, Math.round(r.width));
+      // Desktop: the plane fills its panel. Mobile: a near-square plane under the expression list.
+      const lg = window.matchMedia("(min-width: 1024px)").matches;
+      const h = lg && r.height > 200 ? Math.round(r.height) : Math.round(Math.min(560, Math.max(320, w * 0.85)));
+      setSize((s) => (s.w === w && s.h === h ? s : { w, h }));
+    };
+    const ro = new ResizeObserver(measure);
+    window.addEventListener("resize", measure);
+    measure();
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   useEffect(() => {
@@ -185,7 +195,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
 
       // Labels
       ctx.fillStyle = muted;
-      ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+      ctx.font = `11px ${cssVar("--font-code", "ui-monospace")}, ui-monospace, monospace`;
       const lx = Math.min(size.h - 4, Math.max(12, origin.py + 14));
       ctx.textAlign = "center";
       for (let x = Math.ceil(range.x0 / step) * step; x <= range.x1; x += step) {
@@ -253,7 +263,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
         ctx.arc(px, py, 5.5, 0, Math.PI * 2);
         ctx.fill();
         const label = `${KIND_LABEL[p.kind]} (${fmt(p.x)}, ${fmt(p.y)})`;
-        ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
+        ctx.font = `500 12px ${cssVar("--font-code", "ui-monospace")}, ui-monospace, monospace`;
         const w = ctx.measureText(label).width + 12;
         const bx = Math.min(size.w - w - 4, Math.max(4, px + 8));
         const by = Math.max(4, py - 30);
@@ -381,11 +391,13 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
   }, [tableExpr, tableStart, tableStep, params]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
-      <div className="min-w-0 space-y-3">
-        <div className="card divide-y divide-line">
+    <div className="overflow-hidden rounded-[18px] border border-line bg-surface shadow-elev-2 lg:grid lg:h-[calc(100dvh-15rem)] lg:min-h-[560px] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="flex min-w-0 flex-col border-b border-line lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div className="divide-y divide-line border-b border-line">
           {parsed.map(({ expr, p }, i) => (
-            <div key={expr.id} className="p-2.5">
+            <div key={expr.id} className="grid grid-cols-[2rem_minmax(0,1fr)] py-2 pr-2.5 transition-colors focus-within:bg-accent/[0.05]">
+              <span className="num pt-2 text-center text-[11px] text-muted">{i + 1}</span>
+              <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -397,7 +409,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
                   {expr.visible ? <Eye className="h-3.5 w-3.5 text-white" /> : <EyeOff className="h-3.5 w-3.5" style={{ color: expr.color }} />}
                 </button>
                 <input
-                  className="input py-1.5 font-mono"
+                  className="w-full min-w-0 bg-transparent py-1.5 font-mono text-[15px] outline-none placeholder:text-muted"
                   value={expr.text}
                   onChange={(e) => update(expr.id, { text: e.target.value })}
                   placeholder={i === 0 ? "y = x^2 - 4" : "Add an equation"}
@@ -414,6 +426,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
                   {tableFor === expr.id ? "Hide table" : "Table of values"}
                 </button>
               )}
+              </div>
             </div>
           ))}
           <button type="button" onClick={add} className="flex w-full items-center gap-2 p-2.5 text-sm text-muted hover:bg-surface-2 hover:text-text">
@@ -422,7 +435,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
         </div>
 
         {paramNames.length > 0 && (
-          <div className="card space-y-3 p-3">
+          <div className="space-y-3 border-b border-line p-3">
             <div className="label">Parameters</div>
             {paramNames.map((n) => {
               const s = sliders[n];
@@ -475,7 +488,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
         )}
 
         {tableExpr && (
-          <div className="card p-3">
+          <div className="border-b border-line p-3">
             <div className="mb-2 flex items-center gap-2">
               <span className="label flex-1">Table: {tableExpr.expr.text}</span>
               <button type="button" onClick={() => setTableFor(null)} className="text-muted hover:text-text" aria-label="Close table">
@@ -520,31 +533,31 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
         )}
       </div>
 
-      <div className="min-w-0 space-y-2">
-        <div ref={wrapRef} className="relative overflow-hidden rounded-xl border border-line">
+      <div className="flex min-w-0 flex-col lg:min-h-0">
+        <div ref={wrapRef} className="relative min-h-0 overflow-hidden max-lg:min-h-[320px] lg:flex-1">
           <canvas
             ref={canvasRef}
             style={{ width: size.w, height: size.h }}
-            className="block cursor-grab touch-none active:cursor-grabbing"
+            className="block cursor-grab touch-none active:cursor-grabbing lg:absolute lg:inset-0"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             aria-label="Graph. Drag to pan, scroll or pinch to zoom, click a gray point to label it."
           />
-          <div className="absolute right-2 top-2 flex flex-col gap-1">
-            <button type="button" className="btn-ghost btn-sm" onClick={() => zoom(1.4)} aria-label="Zoom in">
+          <div className="absolute right-3 top-3 flex flex-col divide-y divide-line overflow-hidden rounded-[10px] border border-line bg-surface shadow-elev-1">
+            <button type="button" className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-surface-2 hover:text-text" onClick={() => zoom(1.4)} aria-label="Zoom in">
               <Plus className="h-4 w-4" />
             </button>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => zoom(1 / 1.4)} aria-label="Zoom out">
+            <button type="button" className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-surface-2 hover:text-text" onClick={() => zoom(1 / 1.4)} aria-label="Zoom out">
               <Minus className="h-4 w-4" />
             </button>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => setView(DEFAULT_VIEW)} aria-label="Reset view">
+            <button type="button" className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-surface-2 hover:text-text" onClick={() => setView(DEFAULT_VIEW)} aria-label="Reset view">
               <Home className="h-4 w-4" />
             </button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
           <label className="flex items-center gap-2 text-muted">
             <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
             Show roots, extrema, intersections
@@ -559,7 +572,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
           </button>
         </div>
         {pinned.length > 0 && (
-          <ul className="card divide-y divide-line text-sm">
+          <ul className="divide-y divide-line border-t border-line text-sm lg:max-h-40 lg:overflow-y-auto">
             {pinned.map((p, i) => (
               <li key={i} className="flex items-center gap-2 px-3 py-1.5">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.color }} />

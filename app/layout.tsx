@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -8,14 +8,14 @@ import { Notice } from "@/components/shell/Notice";
 import { DataProvider } from "@/lib/data/DataProvider";
 import { themeBootScript } from "@/lib/themes";
 
-const head = Space_Grotesk({ subsets: ["latin"], variable: "--font-head", display: "swap" });
+const head = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-head", display: "swap" });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 const code = JetBrains_Mono({ subsets: ["latin"], variable: "--font-code", display: "swap" });
 
 const SITE_URL = "https://www.algebrateacher.xyz";
-const SITE_TITLE = "Algebra Teacher Billy — Free Step-by-Step AI Math Tutor & Practice Tests";
+const SITE_TITLE = "Algebra Teacher Billy: Free Step-by-Step Math Tutor, Algebra 1 to AP Calculus";
 const SITE_DESCRIPTION =
-  "Algebra Teacher Billy is a free AI math tutor for Algebra 1, Algebra 2, Precalculus, and AP students. Enter any problem to get every step worked out and verified, build auto-graded practice tests, graph functions with sliders, and find the right video lesson for the skill you need to fix first.";
+  "Algebra Teacher Billy is a free AI math tutor for every course from pre-algebra through AP Precalculus, AP Calculus AB and BC, and AP Statistics. Enter any problem to get every step worked out and verified, build auto-graded practice tests, graph functions with sliders, and find the right video lesson for the skill you need to fix first.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -28,6 +28,9 @@ export const metadata: Metadata = {
     "step-by-step math solver",
     "Algebra 2 help",
     "AP math",
+    "AP Precalculus help",
+    "AP Calculus tutor",
+    "AP Statistics help",
     "practice tests",
     "graphing calculator",
     "free math help",

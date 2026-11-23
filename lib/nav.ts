@@ -30,6 +30,6 @@ export const NAV: NavItem[] = [
   { href: "/calculator", label: "Graphing calculator", short: "Graph", icon: Calculator, mobile: true },
   { href: "/videos", label: "Lesson videos", short: "Videos", icon: Video },
   { href: "/cheat-sheet", label: "Formula sheet", short: "Formulas", icon: BookOpen },
-  { href: "/history", label: "History and folders", short: "History", icon: FolderOpen },
+  { href: "/binder", label: "Binder", short: "Binder", icon: FolderOpen },
   { href: "/settings", label: "Settings and themes", short: "Settings", icon: Settings },
 ];

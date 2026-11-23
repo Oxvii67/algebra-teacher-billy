@@ -40,7 +40,7 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
             className={`ws-row border-b border-dashed border-line py-3.5 last:border-b-0 ${stepMode && i === shown - 1 && i > 0 ? "step-in" : ""}`}
             data-active={stepMode && i === shown - 1}
           >
-            <span className="ws-num pt-[0.3rem]">{String(i + 1).padStart(2, "0")}</span>
+            <span className="ws-num pt-[0.3rem]">{i + 1}</span>
             <div className="min-w-0">
               <MathText text={s.explanation} className="text-[0.95rem] leading-relaxed" />
               {s.latex?.trim() && <MathBlock latex={s.latex} className="mt-1 [&_.katex-display]:mb-0 [&_.katex-display]:pb-0" />}

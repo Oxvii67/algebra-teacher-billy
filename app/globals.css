@@ -6,7 +6,7 @@
   --surface-2: #f3f1ec;
   --text: #141413;
   --muted: #5f5b53;
-  --border: #e5e2dc;
+  --border: rgba(20, 20, 19, 0.08);
   --accent: #1d4ed8;
   --accent-fg: #ffffff;
   --highlight: #d97706;
@@ -14,12 +14,14 @@
   --danger: #b42318;
   --warning: #b45309;
   --grid: #eeebe5;
-  --shadow: #3a3226;
+  --shadow: #141413;
 
-  /* Elevation is quiet: a hairline contact shadow and a wide, faint ambient one. */
-  --elev-1: 0 1px 0 color-mix(in srgb, var(--shadow) 4%, transparent), 0 1px 2px color-mix(in srgb, var(--shadow) 5%, transparent);
-  --elev-2: 0 1px 0 color-mix(in srgb, var(--shadow) 4%, transparent), 0 8px 24px -12px color-mix(in srgb, var(--shadow) 18%, transparent);
-  --elev-3: 0 1px 0 color-mix(in srgb, var(--shadow) 5%, transparent), 0 30px 60px -30px color-mix(in srgb, var(--shadow) 30%, transparent);
+  /* Layered elevation: a contact shadow, a short key shadow, and a wide ambient one. */
+  --elev-1: 0 1px 1px color-mix(in srgb, var(--shadow) 3%, transparent), 0 2px 4px -1px color-mix(in srgb, var(--shadow) 4%, transparent);
+  --elev-2: 0 1px 1px color-mix(in srgb, var(--shadow) 3%, transparent), 0 4px 8px -2px color-mix(in srgb, var(--shadow) 5%, transparent),
+    0 16px 32px -12px color-mix(in srgb, var(--shadow) 9%, transparent);
+  --elev-3: 0 1px 1px color-mix(in srgb, var(--shadow) 4%, transparent), 0 8px 16px -4px color-mix(in srgb, var(--shadow) 7%, transparent),
+    0 32px 64px -24px color-mix(in srgb, var(--shadow) 18%, transparent);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
   --radius: 14px;
@@ -75,7 +77,7 @@
   h3,
   h4 {
     font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     text-wrap: balance;
   }
 
@@ -175,6 +177,7 @@
 @utility card {
   @apply border border-line bg-surface;
   border-radius: var(--radius);
+  box-shadow: var(--elev-1);
 }
 @utility card-raised {
   @apply border border-line bg-surface;
@@ -203,10 +206,10 @@
   }
 }
 @utility label {
-  @apply font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase;
+  @apply text-[12.5px] font-semibold text-muted;
 }
 @utility eyebrow {
-  @apply font-mono text-[11px] font-medium tracking-[0.12em] text-muted uppercase;
+  @apply text-[13px] font-semibold text-muted;
 }
 /* Pill tabs: a recessed track with a raised, sliding-feel active pill. */
 @utility tab {
@@ -405,10 +408,10 @@
 
 @utility page-title {
   font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: clamp(1.85rem, 1.4rem + 1.6vw, 2.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 @utility display-tight {
   font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
@@ -466,4 +469,13 @@
 .graph-paper-faint {
   background-image: linear-gradient(color-mix(in srgb, var(--grid) 55%, transparent) 1px, transparent 1px);
   background-size: 100% 28px;
+}
+
+/* Worksheet math reads left to right like handwriting, never centered. */
+.worksheet .katex-display,
+.worksheet .katex-display > .katex {
+  text-align: left;
+}
+.worksheet .katex-display {
+  margin: 0.15em 0 0;
 }

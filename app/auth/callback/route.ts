@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next");
-  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/history";
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/binder";
 
   if (code) {
     const supabase = await getSupabaseServer();

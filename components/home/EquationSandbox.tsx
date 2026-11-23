@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
-import { SANDBOX, type SandboxCourse, type SandboxExample } from "@/lib/sandbox";
+import { SANDBOX, type SandboxExample } from "@/lib/sandbox";
 
 const STEP_MS = 480;
 const W = 560;
 const H = 340;
-const COURSES: SandboxCourse[] = ["Algebra 2", "AP Precalculus", "AP Calculus"];
+const LABEL_FONT = 11.5;
+const CHAR_W = 6.9; // monospace advance at LABEL_FONT
 
 function project(ex: SandboxExample) {
   const [x0, x1] = ex.x;
@@ -65,12 +66,70 @@ function fmt(v: number) {
   return (Object.is(r, -0) ? 0 : r).toFixed(2).replace(/\.?0+$/, "");
 }
 
+type Box = { x: number; y: number; w: number; h: number };
+
+const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+/**
+ * Places each point label in the corner around its point that collides least with the dashed guide
+ * lines, the curves, the axes, other labels, and the plot edge. Earlier labels claim space first.
+ */
+function placeLabels(ex: SandboxExample) {
+  const { px, py } = project(ex);
+  const curvePts = ex.curves.flatMap((c) => {
+    const [a, b] = c.domain ?? ex.x;
+    const out: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 120; i++) {
+      const x = a + ((b - a) * i) / 120;
+      const y = c.fn(x);
+      if (Number.isFinite(y)) out.push({ x: px(x), y: py(y) });
+    }
+    return out;
+  });
+  const guides: Box[] = [
+    ...ex.vlines.map((l) => ({ x: px(l.x) - 3, y: 0, w: 6, h: H })),
+    ...ex.hlines.map((l) => ({ x: 0, y: py(l.y) - 3, w: W, h: 6 })),
+    { x: px(0) - 2, y: 0, w: 4, h: H },
+    { x: 0, y: py(0) - 2, w: W, h: 4 },
+  ];
+  const taken: Box[] = [];
+  return ex.points.map((p) => {
+    const x = px(p.x);
+    const y = py(p.y);
+    const w = p.label.length * CHAR_W + 4;
+    const h = LABEL_FONT + 4;
+    const gap = 10;
+    const options: (Box & { anchor: "start" | "end" })[] = [
+      { x: x + gap, y: y - gap - h, w, h, anchor: "start" },
+      { x: x + gap, y: y + gap, w, h, anchor: "start" },
+      { x: x - gap - w, y: y - gap - h, w, h, anchor: "end" },
+      { x: x - gap - w, y: y + gap, w, h, anchor: "end" },
+    ];
+    let best = options[0];
+    let bestScore = Infinity;
+    for (const o of options) {
+      let score = 0;
+      if (o.x < 2 || o.x + o.w > W - 2 || o.y < 2 || o.y + o.h > H - 2) score += 10_000;
+      for (const g of guides) score += overlap(o, g) * 40;
+      for (const t of taken) score += overlap(o, t) * 60;
+      for (const c of curvePts) if (c.x >= o.x - 3 && c.x <= o.x + o.w + 3 && c.y >= o.y - 3 && c.y <= o.y + o.h + 3) score += 300;
+      if (score < bestScore) {
+        bestScore = score;
+        best = o;
+      }
+    }
+    taken.push(best);
+    return { tx: best.anchor === "start" ? best.x + 2 : best.x + best.w - 2, ty: best.y + h - 4, anchor: best.anchor };
+  });
+}
+
 function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run: number }) {
   const { px, py, ux } = project(ex);
   const svgRef = useRef<SVGSVGElement>(null);
   const [hx, setHx] = useState<number | null>(null);
   const paths = useMemo(() => ex.curves.map((c) => ({ ...c, d: curvePath(ex, c.fn, c.domain) })), [ex]);
   const shade = useMemo(() => areaPath(ex), [ex]);
+  const labels = useMemo(() => placeLabels(ex), [ex]);
   const lit = (id: string) => focus.size === 0 || focus.has(id);
 
   // The trace follows the first curve whose domain contains the pointer, like a calculator trace.
@@ -162,12 +221,12 @@ function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run:
       {ex.points.map((p, i) => {
         const x = px(p.x);
         const y = py(p.y);
-        const right = x < W - 80;
+        const l = labels[i];
         return (
           <g key={p.id} className="pop" style={{ animationDelay: `${900 + i * 110}ms`, opacity: lit(p.id) ? 1 : 0.35, transition: "opacity 240ms" }}>
             {focus.has(p.id) && <circle cx={x} cy={y} r="12" fill="var(--accent)" fillOpacity="0.14" />}
             <circle cx={x} cy={y} r="4.5" fill={p.kind === "hole" ? "var(--surface)" : "var(--text)"} stroke="var(--text)" strokeWidth={p.kind === "hole" ? 1.8 : 0} />
-            <text x={right ? x + 9 : x - 9} y={y - 9} textAnchor={right ? "start" : "end"} fontFamily="var(--font-code)" fontSize="11.5" fill="var(--text)">
+            <text x={l.tx} y={l.ty} textAnchor={l.anchor} fontFamily="var(--font-code)" fontSize={LABEL_FONT} fill="var(--text)" paintOrder="stroke" stroke="var(--surface)" strokeWidth="4" strokeLinejoin="round">
               {p.label}
             </text>
           </g>
@@ -191,10 +250,10 @@ function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run:
 }
 
 /**
- * Landing-page hero. The left column carries the pitch and one-click samples grouped by course;
- * the right column is a live worksheet: KaTeX steps written out one by one beside a traceable curve.
+ * Landing-page worked example: pick a problem in the header, watch the KaTeX steps write out beside a
+ * traceable curve, then tap any step to see it on the graph.
  */
-export function EquationSandbox({ intro }: { intro: React.ReactNode }) {
+export function EquationSandbox() {
   const [active, setActive] = useState(0);
   const [run, setRun] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -213,52 +272,32 @@ export function EquationSandbox({ intro }: { intro: React.ReactNode }) {
   const focus = new Set(current !== null && current >= 0 ? (ex.steps[current]?.focus ?? []) : []);
 
   return (
-    <section className="grid items-start gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
-      <div className="min-w-0 lg:sticky lg:top-24">
-        {intro}
-        <div className="mt-9" role="tablist" aria-label="Sample problems">
-          <p className="text-sm font-semibold">Watch Billy work one</p>
-          <div className="mt-3 space-y-3">
-            {COURSES.map((c) => (
-              <div key={c} className="grid items-baseline gap-2 border-t border-line pt-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-3">
-                <span className="text-[13px] text-muted">{c}</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {SANDBOX.map((e, i) =>
-                    e.course !== c ? null : (
-                      <button
-                        key={e.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={i === active}
-                        aria-controls="sandbox-panel"
-                        onClick={() => {
-                          setActive(i);
-                          setRun((n) => n + 1);
-                        }}
-                        className={`rounded-full border px-3 py-1 text-[13px] font-medium transition-[background-color,border-color,color] duration-150 ${
-                          i === active ? "border-text bg-text text-bg" : "border-line bg-surface hover:border-text/40"
-                        }`}
-                      >
-                        {e.tab}
-                      </button>
-                    ),
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className="card-raised min-w-0 overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none]" role="tablist" aria-label="Worked examples">
+          {SANDBOX.map((e, i) => (
+            <button
+              key={e.id}
+              type="button"
+              role="tab"
+              aria-selected={i === active}
+              aria-controls="sandbox-panel"
+              onClick={() => {
+                setActive(i);
+                setRun((n) => n + 1);
+              }}
+              className={`tab shrink-0 whitespace-nowrap text-[13px] ${i === active ? "tab-active" : ""}`}
+            >
+              {e.tab}
+            </button>
+          ))}
         </div>
+        <button type="button" onClick={() => setRun((n) => n + 1)} className="btn-quiet btn-sm shrink-0 px-2.5" aria-label="Replay the worked solution">
+          <RotateCcw className="h-4 w-4" />
+        </button>
       </div>
 
-      <div id="sandbox-panel" role="tabpanel" aria-label={`${ex.tab}, worked by Billy`} className="card-raised min-w-0 overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
-          <span className="text-sm font-semibold">{ex.topic}</span>
-          <span className="text-[13px] text-muted">{ex.course}</span>
-          <button type="button" onClick={() => setRun((n) => n + 1)} className="btn-quiet btn-sm ml-auto" aria-label="Replay the worked solution">
-            <RotateCcw className="h-3.5 w-3.5" /> Replay
-          </button>
-        </div>
-
+      <div id="sandbox-panel" role="tabpanel" aria-label={`${ex.topic}, ${ex.course}, worked by Billy`}>
         <div className="aspect-[56/34] w-full border-b border-line bg-surface">
           <Plot ex={ex} focus={focus} run={run * 10 + active} />
         </div>
@@ -267,10 +306,8 @@ export function EquationSandbox({ intro }: { intro: React.ReactNode }) {
           <div key={`p${active}-${run}`} className="rise text-[1.12rem]">
             <MathBlock latex={ex.problemLatex} />
           </div>
-          <div className="callout mt-1 text-sm" style={{ ["--rule" as string]: "var(--highlight)" }}>
-            <span className="mr-2 font-semibold" style={{ color: "var(--highlight)" }}>
-              {ex.rule.name}
-            </span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] bg-surface-2 px-3.5 py-2.5 text-sm">
+            <span className="font-medium text-muted">{ex.rule.name}</span>
             <MathInline latex={ex.rule.latex} />
           </div>
 
@@ -300,22 +337,22 @@ export function EquationSandbox({ intro }: { intro: React.ReactNode }) {
           </ol>
 
           <div className={`mt-3 transition-[opacity,transform] duration-500 ${done ? "opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] border border-text/70 px-4 py-2">
-              <span className="text-[13px] font-semibold">Answer</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border border-success/50 px-4 py-2.5">
+              <span className="text-[13px] font-semibold text-success">Answer</span>
               <span className="min-w-0 overflow-x-auto text-[1.02rem]">
                 <MathInline latex={ex.answerLatex} />
               </span>
             </div>
             <MathText text={ex.check} className="mt-2 text-[13px] text-muted" />
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-[13px] text-muted">Tap a step to find it on the graph. Drag across the graph to trace it.</span>
+              <span className="text-[13px] text-muted">Tap a step to see it on the graph.</span>
               <Link href={ex.href} className="text-sm font-semibold text-accent underline decoration-accent/30 underline-offset-4 transition-colors hover:decoration-accent">
-                {ex.href.startsWith("/studio") ? "Open the full lesson" : "Work through it with Billy"}
+                {ex.href.startsWith("/studio") ? "See the full solution" : "Work it with Billy"}
               </Link>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

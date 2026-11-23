@@ -155,9 +155,9 @@ export function EquationInput({
       </div>
 
       <div className="card p-3">
-        <div className="mb-3 flex flex-wrap gap-1 rounded-lg bg-surface-2 p-1">
+        <div className="tab-track mb-3 grid w-full grid-cols-4">
           {GROUPS.map((g, i) => (
-            <button key={g.name} type="button" onClick={() => setGroup(i)} className={`tab flex-1 justify-center ${group === i ? "tab-active" : ""}`}>
+            <button key={g.name} type="button" onClick={() => setGroup(i)} className={`tab justify-center px-2 ${group === i ? "tab-active" : ""}`}>
               {g.name}
             </button>
           ))}

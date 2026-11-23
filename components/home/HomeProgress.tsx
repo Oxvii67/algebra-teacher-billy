@@ -42,7 +42,8 @@ export function HomeProgress() {
   const { ready } = useData();
   const { profile, into, need, pct } = useLevelProgress();
   const hasSkills = Object.keys(profile.skill_mastery).length > 0;
-  if (!ready) return null;
+  // A new visitor has nothing to show yet; the block appears after the first solved problem.
+  if (!ready || profile.xp === 0) return null;
 
   return (
     <section className="card grid gap-8 p-6 md:grid-cols-12 md:p-8" aria-labelledby="progress-title">
@@ -51,7 +52,7 @@ export function HomeProgress() {
           Your progress
         </h2>
         <p className="mt-2 max-w-xs text-sm text-muted">
-          {profile.xp === 0 ? "Every solved problem, drill, and test builds this record." : "One problem a day keeps the streak alive."}
+          One problem a day keeps the streak going.
         </p>
       </div>
       <div className="md:col-span-8">

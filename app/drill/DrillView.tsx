@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, LoaderCircle, Play, Sparkles, Target, Timer, X } from "lucide-react";
+import { Check, LoaderCircle, Play, RefreshCw, Target, Timer, X } from "lucide-react";
 import { MathBlock, MathText } from "@/components/math/Math";
 import { CURATED_DRILLS } from "@/lib/drills";
 import { useData } from "@/lib/data/DataProvider";
@@ -109,7 +109,7 @@ export function DrillView() {
         <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
-            <Sparkles className="h-4 w-4 text-accent" /> Generate a fresh drill
+            <RefreshCw className="h-4 w-4" /> Get a new drill
           </label>
           {useAi && <input className="input sm:w-64" placeholder="Topic (optional), e.g. logarithms" value={topic} onChange={(e) => setTopic(e.target.value)} />}
           <button className="btn-primary sm:ml-auto" onClick={start}>

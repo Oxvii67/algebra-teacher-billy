@@ -12,7 +12,7 @@ import {
   LoaderCircle,
   MessageSquare,
   ShieldCheck,
-  Sparkles,
+  ChevronsUp,
   TriangleAlert,
   Zap,
 } from "lucide-react";
@@ -234,7 +234,7 @@ export function SolutionView({
       {/* (f) Challenge and (g) graph */}
       <section className="flex flex-wrap gap-2">
         <button type="button" className="btn-primary" onClick={getChallenge} disabled={challengeBusy}>
-          {challengeBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {challengeBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ChevronsUp className="h-4 w-4" />}
           Challenge me: Honors version
         </button>
         <Link href={`/tutor?p=${encodeURIComponent(result.problemLatex)}`} className="btn-ghost">

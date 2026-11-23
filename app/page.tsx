@@ -1,108 +1,122 @@
 import Link from "next/link";
 import { EquationSandbox } from "@/components/home/EquationSandbox";
 import { HomeProgress } from "@/components/home/HomeProgress";
-import { NAV } from "@/lib/nav";
+import { ProblemBox } from "@/components/home/ProblemBox";
+import { MathInline } from "@/components/math/Math";
 
-const INDEX: Record<string, string> = {
-  "/studio": "Photograph it, draw it, or type it. Every line explained, every answer substituted back in.",
-  "/tutor": "Billy asks the questions. Guess wrong and he shows you exactly where it breaks.",
-  "/practice-test": "Up to ten homework problems become a graded test, at your level or harder.",
-  "/calculator": "Expressions on the left, the plane on the right. Sliders, roots, extrema, intersections.",
-  "/drill": "Sixty seconds. One wrong step. Find it.",
-  "/videos": "The lesson for the exact skill you are missing, from Algebra 1 to AP Calculus.",
-  "/cheat-sheet": "One printable page of formulas to know cold.",
-  "/binder": "Every solved problem and test, filed in your folders.",
-};
-
-const CHIP: Record<string, string> = {
-  "/studio": "var(--accent)",
-  "/tutor": "#0ea5e9",
-  "/practice-test": "#ff7a45",
-  "/calculator": "#10b981",
-  "/drill": "#e83e8c",
-  "/videos": "#f59e0b",
-  "/cheat-sheet": "#8b5cf6",
-  "/binder": "#14b8a6",
-};
-
-const METHOD = [
-  ["Every step shown", "No skipped algebra. Each line says what changed and which rule made it legal."],
-  ["Every answer checked", "Billy substitutes the answer back into the original problem before you see it."],
-  ["The gap named", "You get the prerequisite skill to fix first, with the lesson that teaches it."],
-] as const;
-
-function Intro() {
+function Tile({ href, title, body, className = "", children }: { href: string; title: string; body: string; className?: string; children?: React.ReactNode }) {
   return (
-    <>
-      <p className="pill w-fit border-transparent bg-accent/10 font-semibold text-accent">Free for every student, pre-algebra to AP Calc</p>
-      <h1 className="mt-4 font-display text-[clamp(2.25rem,1.6rem+2.4vw,3.5rem)] font-bold leading-[1.04] tracking-[-0.03em]">
-        Stuck on a problem? Billy walks you through every step.
-      </h1>
-      <p className="mt-5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-muted">
-        Snap a photo, sketch it, or type it in. Billy works it line by line, double-checks the answer, and points you to the one skill worth practicing next.
-      </p>
-      <div className="mt-7 flex flex-wrap gap-2">
-        <Link href="/studio" className="btn-primary px-5 py-3 text-[15px]">
-          Solve your problem
-        </Link>
-        <Link href="/practice-test" className="btn-ghost px-5 py-3 text-[15px]">
-          Build a practice test
-        </Link>
+    <Link href={href} className={`card card-link group flex flex-col justify-between gap-6 p-6 ${className}`}>
+      {children && <div className="min-h-0">{children}</div>}
+      <div>
+        <h3 className="text-lg font-semibold tracking-[-0.015em]">{title}</h3>
+        <p className="mt-1 max-w-[42ch] text-[15px] leading-relaxed text-muted">{body}</p>
       </div>
-    </>
+    </Link>
   );
 }
 
 export default function Home() {
-  const tools = NAV.filter((n) => INDEX[n.href]);
   return (
     <div className="space-y-24 md:space-y-32">
-      <EquationSandbox intro={<Intro />} />
+      <section className="grid items-start gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <div className="min-w-0 lg:sticky lg:top-24 lg:pt-6">
+          <h1 className="font-display text-[clamp(2.3rem,1.7rem+2.3vw,3.6rem)] font-bold leading-[1.02] tracking-[-0.035em]">
+            Step-by-step math help, Algebra 1 to AP Calculus
+          </h1>
+          <p className="mt-5 max-w-[30rem] text-[1.0625rem] leading-relaxed text-muted">
+            Billy writes out every line, plugs the answer back in to check it, and tells you which skill to review. Free, no account needed.
+          </p>
+          <div className="mt-8 max-w-[34rem]">
+            <ProblemBox />
+          </div>
+        </div>
 
-      <section aria-labelledby="method-title">
-        <h2 id="method-title" className="text-center font-display text-3xl font-bold tracking-[-0.03em]">
-          How Billy teaches
-        </h2>
-        <dl className="mt-8 grid gap-4 sm:grid-cols-3">
-          {METHOD.map(([title, body], i) => (
-            <div key={title} className="card p-6">
-              <span className="chip-icon num text-base font-bold" style={{ ["--chip" as string]: ["var(--accent)", "#10b981", "#ff7a45"][i] }}>
-                {i + 1}
-              </span>
-              <dt className="mt-4 text-lg font-semibold tracking-[-0.01em]">{title}</dt>
-              <dd className="mt-1.5 text-sm leading-relaxed text-muted">{body}</dd>
-            </div>
-          ))}
-        </dl>
+        <EquationSandbox />
       </section>
 
       <HomeProgress />
 
       <section aria-labelledby="tools-title">
-        <div className="text-center">
-          <h2 id="tools-title" className="font-display text-3xl font-bold tracking-[-0.03em]">
-            Everything in one backpack
-          </h2>
-          <p className="mt-2 text-muted">Jump in wherever you are stuck.</p>
+        <h2 id="tools-title" className="font-display text-[clamp(1.6rem,1.3rem+1vw,2.1rem)] font-bold tracking-[-0.03em]">
+          Practice, graphs and lessons
+        </h2>
+        <div className="mt-8 grid gap-3 md:grid-cols-6">
+          <Tile
+            href="/practice-test"
+            title="Practice tests from your homework"
+            body="Paste up to ten problems. Billy writes a graded test on the same skills."
+            className="md:col-span-3"
+          >
+            <div className="rounded-[12px] border border-line bg-bg p-4 text-[15px]">
+              <div className="flex items-baseline gap-3">
+                <span className="num text-[13px] text-muted">3.</span>
+                <MathInline latex="x^2 - 7x + 12 = 0" />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                {["x = 3, 4", "x = -3, -4", "x = 2, 6", "x = 1, 12"].map((c, i) => (
+                  <span key={c} className={`rounded-[8px] border px-3 py-1.5 ${i === 0 ? "border-success/60 text-success" : "border-line text-muted"}`}>
+                    <MathInline latex={c} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </Tile>
+          <Tile href="/tutor" title="Ask Billy" body="Billy answers with a question, so you find the next step yourself." className="md:col-span-3">
+            <div className="space-y-2 text-[15px]">
+              <p className="ml-auto w-fit max-w-[85%] rounded-[12px] rounded-br-[4px] bg-surface-2 px-3.5 py-2">
+                Is it <MathInline latex="x = 5" />?
+              </p>
+              <p className="w-fit max-w-[85%] rounded-[12px] rounded-bl-[4px] border border-line px-3.5 py-2">
+                Plug it in. What is <MathInline latex="2(5) + 3" />?
+              </p>
+            </div>
+          </Tile>
+          <Tile href="/calculator" title="Graphing calculator" body="Sliders for every constant. Roots and turning points marked." className="md:col-span-2">
+            <svg viewBox="0 0 200 80" className="h-20 w-full" aria-hidden="true">
+              <line x1="0" x2="200" y1="50" y2="50" stroke="var(--border)" />
+              <line x1="100" x2="100" y1="0" y2="80" stroke="var(--border)" />
+              <path d="M30 4 Q100 140 170 4" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" />
+              <circle cx="60" cy="50" r="3.5" fill="var(--text)" />
+              <circle cx="140" cy="50" r="3.5" fill="var(--text)" />
+            </svg>
+          </Tile>
+          <Tile href="/drill" title="Spot the mistake" body="One worked problem, one wrong line. Find it in 60 seconds." className="md:col-span-2">
+            <div className="space-y-1.5 text-[15px]">
+              <div className="flex items-baseline gap-3">
+                <span className="num w-4 text-[13px] text-muted">1</span>
+                <MathInline latex="3(x - 4) = 6" />
+              </div>
+              <div className="flex items-baseline gap-3 rounded-[8px] bg-danger/10 py-0.5">
+                <span className="num w-4 text-[13px] text-danger">2</span>
+                <span className="text-danger line-through decoration-danger/60">
+                  <MathInline latex="3x - 4 = 6" />
+                </span>
+              </div>
+              <div className="flex items-baseline gap-3 text-muted">
+                <span className="num w-4 text-[13px]">3</span>
+                <MathInline latex="3x = 10" />
+              </div>
+            </div>
+          </Tile>
+          <Tile href="/videos" title="Lesson videos" body="The lesson for the skill you are missing, across 72 topics." className="md:col-span-2">
+            <div className="flex flex-wrap gap-1.5">
+              {["Factoring trinomials", "Chain rule", "Unit circle", "Logarithms"].map((t) => (
+                <span key={t} className="pill text-muted">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </Tile>
         </div>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {tools.map((n) => {
-            const Icon = n.icon;
-            return (
-              <li key={n.href}>
-                <Link href={n.href} className="card card-link group flex h-full flex-col gap-3 p-5">
-                  <span className="chip-icon" style={{ ["--chip" as string]: CHIP[n.href] }}>
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span>
-                    <span className="block font-semibold tracking-[-0.01em] transition-colors group-hover:text-accent">{n.label}</span>
-                    <span className="mt-1 block text-sm leading-relaxed text-muted">{INDEX[n.href]}</span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+          <Link href="/cheat-sheet" className="hover:text-text">
+            Printable formula sheet
+          </Link>
+          <Link href="/binder" className="hover:text-text">
+            Your saved problems
+          </Link>
+        </div>
       </section>
     </div>
   );

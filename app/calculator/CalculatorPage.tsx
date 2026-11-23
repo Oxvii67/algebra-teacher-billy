@@ -11,9 +11,8 @@ export function CalculatorPage() {
     <div className="space-y-5">
       <header>
         <h1 className="page-title">Graphing calculator</h1>
-        <p className="mt-1 text-sm text-muted">
-          Type y = ..., f(x) = ..., x = c, or an equation like x^2 = 2x + 3 to see both sides. Letters other than x become sliders. Click a gray point
-          to label it.
+        <p className="mt-2 text-muted">
+          Type <span className="num text-text">y = x^2 - 4</span> or any equation. Extra letters become sliders.
         </p>
       </header>
       <GraphCalculator key={key} initial={initial} />

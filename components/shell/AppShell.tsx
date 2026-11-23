@@ -102,7 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mobileItems = NAV.filter((n) => n.mobile);
 
   return (
-    <div className="soft-glow flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
         Skip to content
       </a>
@@ -152,7 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-semibold transition-colors ${active ? "text-text" : "text-muted"}`}
+                className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition-colors ${active ? "text-text" : "text-muted"}`}
               >
                 <span className={`flex h-7 w-11 items-center justify-center rounded-full transition-colors duration-200 ${active ? "bg-accent text-accent-fg" : ""}`}>
                   <Icon className="h-[18px] w-[18px]" />
@@ -164,7 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
-            className="flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10.5px] font-semibold text-muted"
+            className="flex flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold text-muted"
             aria-haspopup="dialog"
           >
             <span className="flex h-7 w-11 items-center justify-center">

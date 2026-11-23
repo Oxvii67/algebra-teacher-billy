@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
-import { StudioInput } from "@/components/studio/StudioInput";
+import { StudioInput, type StudioTab } from "@/components/studio/StudioInput";
 import { SolutionView } from "@/components/solve/SolutionView";
 import { useData } from "@/lib/data/DataProvider";
 import type { SavedSolution, SolveInput, SolveResult } from "@/lib/types";
@@ -17,7 +17,13 @@ export function StudioView() {
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const example = exampleBySlug(useSearchParams().get("example"));
+  const params = useSearchParams();
+  const example = exampleBySlug(params.get("example"));
+  // A problem typed on the home page arrives as ?q= and starts solving at once.
+  const q = params.get("q")?.trim().slice(0, 4000) ?? "";
+  const modeParam = params.get("mode");
+  const initialTab: StudioTab = modeParam === "image" || modeParam === "draw" ? modeParam : "type";
+  const startedQ = useRef(false);
   const [result, setResult] = useState<SolveResult | null>(example?.result ?? null);
   const [saved, setSaved] = useState<SavedSolution | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -52,12 +58,20 @@ export function StudioView() {
     }
   };
 
+  useEffect(() => {
+    if (!q || startedQ.current || example) return;
+    startedQ.current = true;
+    void solve({ kind: "text", latex: q });
+    // solve is stable for this purpose; run once per arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, example]);
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Solve a problem</h1>
-          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example from Billy. Read the reasons, not just the lines." : "One problem at a time. Photograph it, draw it, or type it."}</p>
+          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example. Read the reason beside each line." : "One problem at a time. Type it, photograph it, or write it by hand."}</p>
         </div>
         {result && (
           <button type="button" className="btn-ghost" onClick={() => setResult(null)}>
@@ -67,7 +81,7 @@ export function StudioView() {
       </header>
 
       <div hidden={!!result}>
-        <StudioInput onSubmit={solve} busy={busy} />
+        <StudioInput onSubmit={solve} busy={busy} initialTab={initialTab} initialLatex={q} />
       </div>
 
       {busy && (
@@ -75,7 +89,7 @@ export function StudioView() {
           <LoaderCircle className="h-5 w-5 animate-spin text-accent" />
           <div>
             <div className="font-medium">{STAGES[stage]}</div>
-            <div className="text-xs text-muted">One pass: Billy solves it and substitutes the answer back in before you see it. Usually 8 to 20 seconds.</div>
+            <div className="text-[13px] text-muted">Usually 8 to 20 seconds. Billy checks the answer before you see it.</div>
           </div>
         </div>
       )}

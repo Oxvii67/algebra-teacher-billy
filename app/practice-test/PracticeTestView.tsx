@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ClipboardList, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
+import { Check, ChevronDown, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
 import { StepList } from "@/components/solve/StepList";
 import { compressAll } from "@/lib/image-compress";
@@ -12,9 +12,9 @@ import { answersMatch } from "@/lib/grade";
 import type { PracticeTest, TestLevel } from "@/lib/types";
 
 const LEVELS: { id: TestLevel; name: string; desc: string }[] = [
-  { id: "same", name: "Same Level", desc: "Same skills, new numbers." },
-  { id: "hard", name: "Hard Level", desc: "One step deeper on every problem." },
-  { id: "ap", name: "AP Level", desc: "Exam rigor and multi-step reasoning." },
+  { id: "same", name: "Same level", desc: "Same skills, new numbers." },
+  { id: "hard", name: "Harder", desc: "One extra step on each problem." },
+  { id: "ap", name: "AP level", desc: "Multi-step, exam-style questions." },
 ];
 
 const MAX = 10;
@@ -165,10 +165,24 @@ export function PracticeTestView() {
     <div className="space-y-6">
       <header>
         <h1 className="page-title">Practice test</h1>
-        <p className="mt-1 text-muted">Give me 1 to 10 problems from your homework. Billy writes a graded test on the same skills.</p>
+        <p className="mt-2 text-muted">Paste up to 10 homework problems. Billy writes a graded test on the same skills.</p>
       </header>
 
       <section className="card space-y-4 p-5">
+        <div>
+          <label className="label" htmlFor="typed">
+            Problems, one per line
+          </label>
+          <textarea
+            id="typed"
+            className="input mt-1.5 font-mono"
+            rows={4}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={"x^2 - 5x + 6 = 0\nlog_2(x) + log_2(x - 2) = 3"}
+          />
+        </div>
+
         <div
           role="button"
           tabIndex={0}
@@ -179,12 +193,12 @@ export function PracticeTestView() {
             e.preventDefault();
             void addFiles(Array.from(e.dataTransfer.files));
           }}
-          className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-line p-8 text-center hover:bg-surface-2"
+          className="flex cursor-pointer flex-col items-center gap-1.5 rounded-[12px] border border-dashed border-line p-6 text-center transition-colors hover:border-text/30 hover:bg-surface-2"
         >
-          <Upload className="h-7 w-7 text-accent" />
-          <p className="font-medium">Drop screenshots here, click to choose, or paste with Ctrl+V or Cmd+V</p>
+          <Upload className="h-5 w-5 text-muted" />
+          <p className="font-medium">Or add screenshots of the problems</p>
           <p className="text-sm text-muted">
-            {images.length}/{MAX} problems added. Crop each image to one problem for best results.
+            Drop, click, or paste. {images.length} of {MAX} added. One problem per image works best.
           </p>
           <input
             ref={fileRef}
@@ -220,34 +234,22 @@ export function PracticeTestView() {
         )}
 
         <div>
-          <label className="label" htmlFor="typed">
-            Or type problems, one per line
-          </label>
-          <textarea
-            id="typed"
-            className="input mt-1.5 font-mono"
-            rows={3}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={"x^2 - 5x + 6 = 0\nlog_2(x) + log_2(x - 2) = 3"}
-          />
-        </div>
-
-        <div>
           <div className="label mb-2">Difficulty</div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="tab-track grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
             {LEVELS.map((l) => (
               <button
                 key={l.id}
                 type="button"
                 onClick={() => setLevel(l.id)}
-                className={`rounded-lg border p-3 text-left ${level === l.id ? "border-accent ring-2 ring-accent/40" : "border-line hover:bg-surface-2"}`}
+                aria-pressed={level === l.id}
+                title={l.desc}
+                className={`tab justify-center ${level === l.id ? "tab-active" : ""}`}
               >
-                <div className="font-semibold">{l.name}</div>
-                <div className="text-xs text-muted">{l.desc}</div>
+                {l.name}
               </button>
             ))}
           </div>
+          <p className="mt-2 text-[13px] text-muted">{LEVELS.find((l) => l.id === level)?.desc}</p>
         </div>
 
         {error && (
@@ -258,8 +260,8 @@ export function PracticeTestView() {
         {progress && <ProgressTrack progress={progress} />}
         <div className="flex justify-end">
           <button className="btn-primary" disabled={busy || (!images.length && !text.trim())} onClick={generate}>
-            {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-            {busy ? "Building your test" : "Generate test"}
+            {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
+            {busy ? "Writing your test" : "Write my test"}
           </button>
         </div>
       </section>
@@ -347,7 +349,7 @@ function TestRunner({
     <div className="space-y-6">
       <header className="no-print flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="label">{test.level === "ap" ? "AP Level" : test.level === "hard" ? "Hard Level" : "Same Level"}</p>
+          <p className="label">{test.level === "ap" ? "AP level" : test.level === "hard" ? "Harder" : "Same level"}</p>
           <h1 className="page-title">{test.title}</h1>
           <p className="mt-1 text-sm text-muted">
             {test.questions.length} questions, {test.max_score} points. Show your work on paper.

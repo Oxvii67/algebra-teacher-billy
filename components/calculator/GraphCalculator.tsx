@@ -391,12 +391,12 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
   }, [tableExpr, tableStart, tableStep, params]);
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-line bg-surface shadow-elev-2 lg:grid lg:h-[calc(100dvh-15rem)] lg:min-h-[560px] lg:grid-cols-[360px_minmax(0,1fr)]">
+    <div className="overflow-hidden rounded-[20px] border border-line bg-surface lg:grid lg:h-[calc(100dvh-15rem)] lg:min-h-[560px] lg:grid-cols-[360px_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col border-b border-line lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <div className="divide-y divide-line border-b border-line">
           {parsed.map(({ expr, p }, i) => (
             <div key={expr.id} className="grid grid-cols-[2rem_minmax(0,1fr)] py-2 pr-2.5 transition-colors focus-within:bg-accent/[0.05]">
-              <span className="num pt-2 text-center text-[11px] text-muted">{i + 1}</span>
+              <span className="num pt-2 text-center text-[13px] text-muted">{i + 1}</span>
               <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <button

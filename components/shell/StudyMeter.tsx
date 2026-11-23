@@ -21,6 +21,8 @@ export function StudyMeter({ variant }: { variant: "full" | "pill" }) {
   const streakOn = profile.streak_days > 0;
 
   if (variant === "pill") {
+    // Nothing earned yet: keep the header clear for a first-time visitor.
+    if (profile.xp === 0) return null;
     return (
       <Link
         href={user ? "/settings" : "/login"}

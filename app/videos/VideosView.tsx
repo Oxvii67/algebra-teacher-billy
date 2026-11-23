@@ -61,7 +61,7 @@ export function VideosView() {
     <div className="space-y-6">
       <header>
         <h1 className="page-title">Lesson videos</h1>
-        <p className="mt-1 text-muted">Name the skill you are stuck on, or paste the problem. Billy points you to the lesson to watch first.</p>
+        <p className="mt-2 text-muted">Name the skill or paste the problem. Billy picks the lesson to watch first.</p>
       </header>
 
       <form
@@ -77,7 +77,7 @@ export function VideosView() {
             className="input pl-9"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. why do I get extraneous solutions with logs"
+            placeholder="Why do I get extra solutions with logs?"
             maxLength={300}
           />
         </div>
@@ -118,7 +118,7 @@ export function VideosView() {
                 key={c}
                 type="button"
                 onClick={() => setChannel(c)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${channel === c ? "border-text bg-text text-bg" : "border-line hover:border-text/40"}`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${channel === c ? "border-text bg-text text-bg" : "border-line text-muted hover:border-text/40 hover:text-text"}`}
               >
                 {c}
               </button>
@@ -175,7 +175,7 @@ export function VideosView() {
                 const v = videosForSlug(t.slug);
                 setPlaying(v[0] ?? null);
               }}
-              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${topic === t.slug ? "border-accent text-accent" : "border-line hover:border-text/40"}`}
+              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${topic === t.slug ? "border-text bg-text text-bg" : "border-line text-muted hover:border-text/40 hover:text-text"}`}
             >
               {t.name}
             </button>

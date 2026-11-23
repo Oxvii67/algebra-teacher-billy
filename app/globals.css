@@ -2,30 +2,29 @@
 
 :root {
   color-scheme: dark;
-  --bg: #000000;
-  --surface: #0e0e11;
-  --surface-2: #18181d;
-  --text: #ededf0;
-  --muted: #9c9ea8;
-  --border: rgba(255, 255, 255, 0.08);
-  --accent: #8b7dff;
-  --accent-fg: #0b0820;
-  --highlight: #f0a24a;
+  --bg: #070708;
+  --surface: #111113;
+  --surface-2: #1a1a1d;
+  --text: #ededee;
+  --muted: #9a9aa2;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #5b9bff;
+  --accent-fg: #04101f;
+  --highlight: #f59e5b;
   --success: #5cc994;
   --danger: #ff8a7a;
   --warning: #f2b45a;
-  --grid: #15151a;
+  --grid: #151518;
   --shadow: #000000;
 
-  /* Layered elevation: a contact shadow, a short key shadow, and a wide ambient one. */
-  --elev-1: 0 1px 1px color-mix(in srgb, var(--shadow) 3%, transparent), 0 2px 4px -1px color-mix(in srgb, var(--shadow) 4%, transparent);
-  --elev-2: 0 1px 1px color-mix(in srgb, var(--shadow) 3%, transparent), 0 4px 8px -2px color-mix(in srgb, var(--shadow) 5%, transparent),
-    0 16px 32px -12px color-mix(in srgb, var(--shadow) 9%, transparent);
-  --elev-3: 0 1px 1px color-mix(in srgb, var(--shadow) 4%, transparent), 0 8px 16px -4px color-mix(in srgb, var(--shadow) 7%, transparent),
-    0 32px 64px -24px color-mix(in srgb, var(--shadow) 18%, transparent);
+  /* Cards sit on a hairline at rest; a soft shadow appears only on a linked card under the pointer. */
+  --elev-1: none;
+  --elev-2: 0 12px 24px -12px color-mix(in srgb, var(--shadow) 22%, transparent);
+  --elev-3: 0 1px 1px color-mix(in srgb, var(--shadow) 4%, transparent), 0 8px 16px -4px color-mix(in srgb, var(--shadow) 10%, transparent),
+    0 24px 48px -16px color-mix(in srgb, var(--shadow) 22%, transparent);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
-  --radius: 18px;
+  --radius: 16px;
 }
 
 @theme inline {
@@ -131,38 +130,37 @@
 }
 
 /* Component utilities ------------------------------------------------------------------------------ */
+/* One button pair. Hover steps the fill toward the ink and lifts 1px; press sinks 1px and scales .985. */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold select-none disabled:cursor-not-allowed disabled:opacity-50;
-  letter-spacing: -0.005em;
+  @apply inline-flex h-11 items-center justify-center gap-2 rounded-[10px] px-5 text-[15px] font-semibold whitespace-nowrap select-none disabled:cursor-not-allowed disabled:opacity-45;
+  letter-spacing: -0.006em;
   transition:
-    background-color 160ms var(--ease-out),
-    border-color 160ms var(--ease-out),
-    box-shadow 160ms var(--ease-out),
-    color 160ms var(--ease-out),
-    transform 160ms var(--ease-out);
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    transform 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+  }
   &:not(:disabled):active {
-    transform: translateY(1px) scale(0.99);
+    transform: translateY(1px) scale(0.985);
+    transition-duration: 90ms;
   }
 }
-/* Primary: a solid key with a darker lip, so it reads as pressable rather than as a colored box. */
 @utility btn-primary {
   @apply btn bg-accent text-accent-fg;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
-    0 6px 16px -6px color-mix(in srgb, var(--accent) 55%, transparent);
   &:not(:disabled):hover {
-    background: color-mix(in srgb, var(--accent) 90%, black);
-    transform: translateY(-1px);
-  }
-  &:not(:disabled):active {
-    box-shadow: inset 0 0 0 color-mix(in srgb, black 22%, transparent);
+    background: color-mix(in srgb, var(--accent) 86%, var(--text));
   }
 }
 @utility btn-ghost {
-  @apply btn border border-line bg-surface text-text;
-  box-shadow: inset 0 -1px 0 var(--border);
+  @apply btn border border-line text-text;
+  background: transparent;
   &:not(:disabled):hover {
-    border-color: color-mix(in srgb, var(--text) 28%, var(--border));
+    background: var(--surface-2);
+    border-color: color-mix(in srgb, var(--text) 30%, transparent);
   }
 }
 @utility btn-quiet {
@@ -173,64 +171,61 @@
   }
 }
 @utility btn-sm {
-  @apply rounded-full px-3 py-1.5 text-xs;
+  @apply h-9 rounded-[8px] px-3 text-[13px];
 }
 @utility card {
   @apply border border-line bg-surface;
   border-radius: var(--radius);
-  box-shadow: var(--elev-1);
 }
 @utility card-raised {
   @apply border border-line bg-surface;
   border-radius: calc(var(--radius) + 4px);
-  box-shadow: var(--elev-2);
 }
+/* A card that links somewhere lifts 2px and darkens its border; nothing else moves. */
 @utility card-link {
   transition:
     border-color 180ms var(--ease-out),
-    transform 220ms var(--ease-out),
-    box-shadow 220ms var(--ease-out);
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--elev-2);
-    border-color: color-mix(in srgb, var(--text) 22%, var(--border));
+    transform 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--elev-2);
+      border-color: color-mix(in srgb, var(--text) 26%, transparent);
+    }
   }
 }
 @utility input {
-  @apply w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted;
+  @apply w-full rounded-[10px] border border-line bg-bg px-3 py-2.5 text-[15px] text-text outline-none placeholder:text-muted;
   transition:
-    border-color 150ms var(--ease-out),
-    box-shadow 150ms var(--ease-out);
+    border-color 140ms var(--ease-out),
+    box-shadow 140ms var(--ease-out);
   &:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
   }
 }
 @utility label {
-  @apply text-[12.5px] font-semibold text-muted;
+  @apply text-[13px] font-medium text-muted;
 }
 @utility eyebrow {
-  @apply text-[13px] font-semibold text-muted;
+  @apply text-[13px] font-medium text-muted;
 }
-/* Pill tabs: a recessed track with a raised, sliding-feel active pill. */
+/* Segmented tabs: a recessed track; the chosen tab is a solid ink pill. */
 @utility tab {
-  @apply inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted hover:text-text;
+  @apply inline-flex items-center gap-2 rounded-[8px] px-3.5 py-1.5 text-sm font-medium text-muted hover:text-text;
   transition:
-    background-color 180ms var(--ease-out),
-    color 180ms var(--ease-out),
-    box-shadow 180ms var(--ease-out);
+    background-color 200ms var(--ease-out),
+    color 200ms var(--ease-out);
 }
 @utility tab-active {
-  @apply bg-surface text-text;
-  box-shadow:
-    0 0 0 1px var(--border),
-    0 1px 2px color-mix(in srgb, var(--shadow) 10%, transparent);
+  @apply bg-text text-bg hover:text-bg;
 }
 @utility tab-track {
-  @apply inline-flex gap-1 rounded-full bg-surface-2 p-1;
+  @apply inline-flex gap-1 rounded-[11px] border border-line bg-surface-2 p-1;
 }
 @utility pill {
-  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium;
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-[13px] font-medium;
 }
 /* Left-rule callout for rules, theorems, and warnings. Set --rule to recolor. */
 @utility callout {
@@ -479,18 +474,4 @@
 }
 .worksheet .katex-display {
   margin: 0.15em 0 0;
-}
-
-/* Friendly page wash: two soft color glows behind the content in light themes. */
-@utility soft-glow {
-  background:
-    radial-gradient(60rem 28rem at 12% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    radial-gradient(40rem 24rem at 95% 0%, color-mix(in srgb, var(--highlight) 9%, transparent), transparent 70%);
-}
-/* Tinted icon chip. Set --chip to recolor. */
-@utility chip-icon {
-  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px];
-  --chip: var(--accent);
-  color: var(--chip);
-  background: color-mix(in srgb, var(--chip) 12%, var(--surface));
 }

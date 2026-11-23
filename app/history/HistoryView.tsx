@@ -28,15 +28,15 @@ export function HistoryView() {
   const count = (id: string) => solutions.filter((s) => s.folder_id === id).length;
   const sel = (f: Filter) => JSON.stringify(f) === JSON.stringify(filter);
   const item = (active: boolean) =>
-    `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${active ? "bg-accent text-accent-fg" : "hover:bg-surface-2"}`;
+    `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${active ? "bg-surface-2 font-medium text-text" : "text-muted hover:bg-surface-2 hover:text-text"}`;
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Binder</h1>
-          <p className="mt-1 text-sm text-muted">
-            {mode === "cloud" ? "Synced to your account." : "Saved on this device. Sign in to sync across devices."}
+          <p className="mt-2 text-muted">
+            {mode === "cloud" ? "Synced to your account." : "Saved on this device. Sign in to keep them on every device."}
           </p>
         </div>
         <div className="relative w-full sm:w-72">

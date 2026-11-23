@@ -17,23 +17,28 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
             key={t.id}
             type="button"
             onClick={() => setTheme(t.id)}
-            className={`flex items-center gap-3 rounded-lg border p-2.5 text-left text-sm transition-colors ${
-              theme === t.id ? "border-accent ring-2 ring-accent/40" : "border-line hover:bg-surface-2"
+            className={`flex items-center gap-3 rounded-[12px] border p-3 text-left text-sm transition-[border-color,box-shadow] duration-150 ${
+              theme === t.id ? "border-accent shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)]" : "border-line hover:border-[color-mix(in_srgb,var(--text)_25%,var(--border))]"
             }`}
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border"
+              className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-[10px] border"
               style={{ background: t.tokens.bg, borderColor: t.tokens.border }}
             >
-              <span className="h-3.5 w-3.5 rounded-full" style={{ background: t.tokens.accent }} />
+              <span className="absolute inset-x-1.5 top-1.5 h-3 rounded-[3px]" style={{ background: t.tokens.surface, border: `1px solid ${t.tokens.border}` }} />
+              <span className="absolute bottom-1.5 left-1.5 h-2 w-4 rounded-full" style={{ background: t.tokens.accent }} />
+              <span className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-full" style={{ background: t.tokens.highlight }} />
             </span>
-            <span className="flex-1 font-medium">{t.name}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t.name}</span>
+              <span className="block truncate text-xs text-muted">{t.blurb}</span>
+            </span>
             {theme === t.id && <Check className="h-4 w-4 text-accent" />}
           </button>
         ))}
       </div>
 
-      <div className={`rounded-lg border p-3 ${theme === "custom" ? "border-accent ring-2 ring-accent/40" : "border-line"}`}>
+      <div className={`rounded-[12px] border p-3 ${theme === "custom" ? "border-accent" : "border-line"}`}>
         <div className="mb-3 flex items-center gap-2 text-sm font-medium">
           <Palette className="h-4 w-4" /> Custom Colors
           {theme === "custom" && <Check className="ml-auto h-4 w-4 text-accent" />}

@@ -33,14 +33,15 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
           </button>
         </div>
       )}
-      <ol className="relative space-y-3">
-        <span className="absolute bottom-4 left-[15px] top-4 w-px bg-line" aria-hidden="true" />
+      <ol className="worksheet">
         {visible.map((s, i) => (
-          <li key={i} className={`relative flex gap-3 ${stepMode && i === shown - 1 && i > 0 ? "step-in" : ""}`}>
-            <span className="relative z-[1] mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-accent bg-surface text-sm font-black tabular-nums text-accent">
-              {i + 1}
-            </span>
-            <div className="min-w-0 flex-1 rounded-xl border border-line bg-surface p-3.5 shadow-elev-1">
+          <li
+            key={i}
+            className={`ws-row border-b border-dashed border-line py-3.5 last:border-b-0 ${stepMode && i === shown - 1 && i > 0 ? "step-in" : ""}`}
+            data-active={stepMode && i === shown - 1}
+          >
+            <span className="ws-num pt-[0.3rem]">{String(i + 1).padStart(2, "0")}</span>
+            <div className="min-w-0">
               <MathText text={s.explanation} className="text-[0.95rem] leading-relaxed" />
               {s.latex?.trim() && <MathBlock latex={s.latex} className="mt-1 [&_.katex-display]:mb-0 [&_.katex-display]:pb-0" />}
             </div>
@@ -48,7 +49,7 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
         ))}
       </ol>
       {stepMode && remaining > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 pl-11">
+        <div className="mt-4 flex flex-wrap items-center gap-3 pl-[2.75rem]">
           <button type="button" className="btn-primary" onClick={() => setShown((n) => n + 1)}>
             <ChevronsDown className="h-4 w-4" /> Reveal step {shown + 1}
           </button>

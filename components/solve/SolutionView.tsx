@@ -92,10 +92,10 @@ export function SolutionView({
   return (
     <div className="space-y-5">
       {/* (a) Detected problem */}
-      <section className="card p-5">
+      <section className="card p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="label">Problem</span>
-          {result.topic && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium">{result.topic}</span>}
+          {result.topic && <span className="pill py-0.5 text-xs">{result.topic}</span>}
           <div className="ml-auto flex flex-wrap gap-2">{toolbar}</div>
         </div>
         <MathBlock latex={result.problemLatex} className="mt-2 text-lg" />
@@ -103,7 +103,7 @@ export function SolutionView({
         {result.skills.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {result.skills.map((s) => (
-              <span key={s} className="rounded-md border border-line px-2 py-0.5 text-xs text-muted">
+              <span key={s} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-muted">
                 {s}
               </span>
             ))}
@@ -113,20 +113,22 @@ export function SolutionView({
 
       {/* (b) Prerequisite skills */}
       {result.prerequisites.length > 0 && (
-        <section className="card p-5">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <section className="card p-5 sm:p-6">
+          <div className="eyebrow">Before you start</div>
+          <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
             <BookOpen className="h-5 w-5 text-accent" /> Prerequisite skills
           </h2>
           <p className="mt-1 text-sm text-muted">If any of these is shaky, fix it first. The rest of the solution depends on it.</p>
           <div className="mt-4 space-y-4">
             {result.prerequisites.map((p, i) => (
-              <div key={i} className="grid gap-4 rounded-lg border border-line p-4 lg:grid-cols-[1fr_320px]">
+              <div key={i} className="grid gap-4 border-t border-line pt-4 first:border-t-0 first:pt-0 lg:grid-cols-[1fr_320px]">
                 <div className="min-w-0">
-                  <h3 className="font-semibold">
-                    {i + 1}. {p.skill}
+                  <h3 className="flex items-baseline gap-2.5 font-semibold">
+                    <span className="num text-xs text-highlight">{String(i + 1).padStart(2, "0")}</span>
+                    {p.skill}
                   </h3>
                   <MathText text={p.why} className="mt-1 text-sm" />
-                  <div className="mt-3 rounded-md bg-surface-2 p-3">
+                  <div className="callout mt-3">
                     <div className="label mb-1">Quick example</div>
                     <MathText text={p.example} className="text-sm" />
                   </div>
@@ -152,8 +154,8 @@ export function SolutionView({
       )}
 
       {/* (c) + (e) Teacher solution and simpler way */}
-      <section className="card p-5">
-        <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
+      <section className="card p-5 sm:p-6">
+        <div className="tab-track mb-5 flex w-full sm:w-auto">
           <button type="button" className={`tab flex-1 justify-center ${tab === "teacher" ? "tab-active" : ""}`} onClick={() => setTab("teacher")}>
             Billy's solution
           </button>
@@ -178,7 +180,7 @@ export function SolutionView({
       </section>
 
       {/* (d) Verified final answer */}
-      <section className={`card border-2 p-5 ${v.verified ? "border-success" : "border-warning"}`}>
+      <section className="card p-5 sm:p-6" style={{ borderLeft: `3px solid ${v.verified ? "var(--success)" : "var(--warning)"}` }}>
         <div className="flex flex-wrap items-center gap-2">
           {v.verified ? (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-success">
@@ -195,7 +197,7 @@ export function SolutionView({
           </div>
         </div>
         <MathBlock latex={result.finalAnswerLatex} className="mt-2 text-xl" />
-        <details className="mt-3 rounded-md bg-surface-2 p-3 text-sm">
+        <details className="mt-3 rounded-[10px] border border-line bg-surface p-3 text-sm">
           <summary className="cursor-pointer font-medium">How this was checked</summary>
           <MathText text={v.check} className="mt-2" />
           {v.corrections.length > 0 && (
@@ -214,14 +216,14 @@ export function SolutionView({
       </section>
 
       {result.commonMistakes.length > 0 && (
-        <section className="card p-5">
+        <section className="callout" style={{ ["--rule" as string]: "var(--danger)" }}>
           <h2 className="flex items-center gap-2 font-semibold">
             <TriangleAlert className="h-5 w-5 text-danger" /> Traps on this problem
           </h2>
           <ul className="mt-3 space-y-2">
             {result.commonMistakes.map((m, i) => (
-              <li key={i} className="flex gap-2 text-sm">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
+              <li key={i} className="flex gap-3 text-sm">
+                <span className="num mt-0.5 shrink-0 text-xs text-danger">{String(i + 1).padStart(2, "0")}</span>
                 <MathText text={m} />
               </li>
             ))}
@@ -247,7 +249,7 @@ export function SolutionView({
       {challengeErr && <p className="text-sm text-danger">{challengeErr}</p>}
 
       {challenge && (
-        <section className="card border-accent p-5">
+        <section className="card-raised p-5 sm:p-6">
           <div className="label">Honors challenge</div>
           <MathBlock latex={challenge.problemLatex} className="mt-2 text-lg" />
           <MathText text={challenge.whyHarder} className="mt-1 text-sm text-muted" />
@@ -264,8 +266,8 @@ export function SolutionView({
               </button>
             )}
           </div>
-          {showHint && <MathText text={challenge.hint} className="mt-3 rounded-md bg-surface-2 p-3 text-sm" />}
-          {showAnswer && <MathBlock latex={challenge.answerLatex} className="mt-3 rounded-md bg-surface-2 p-3" />}
+          {showHint && <MathText text={challenge.hint} className="callout mt-3 text-sm" />}
+          {showAnswer && <MathBlock latex={challenge.answerLatex} className="callout mt-3" />}
         </section>
       )}
     </div>

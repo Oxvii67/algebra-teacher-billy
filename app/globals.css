@@ -1,25 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f6fa;
+  --bg: #faf9f6;
   --surface: #ffffff;
-  --surface-2: #eaeef5;
-  --text: #14213d;
-  --muted: #56607a;
-  --border: #cfd7e4;
-  --accent: #2346d6;
+  --surface-2: #f3f1ec;
+  --text: #141413;
+  --muted: #5f5b53;
+  --border: #e5e2dc;
+  --accent: #1d4ed8;
   --accent-fg: #ffffff;
-  --success: #1d7a4c;
-  --danger: #c8322b;
-  --warning: #9a5a06;
-  --grid: #dfe6f1;
-  --shadow: #14213d;
+  --highlight: #d97706;
+  --success: #15803d;
+  --danger: #b42318;
+  --warning: #b45309;
+  --grid: #eeebe5;
+  --shadow: #3a3226;
 
-  /* Elevation: a tight contact shadow plus a soft ambient one, tinted by the theme. */
-  --elev-1: 0 1px 0 color-mix(in srgb, var(--shadow) 5%, transparent), 0 1px 3px color-mix(in srgb, var(--shadow) 8%, transparent);
-  --elev-2: 0 1px 0 color-mix(in srgb, var(--shadow) 6%, transparent), 0 6px 16px -6px color-mix(in srgb, var(--shadow) 18%, transparent);
-  --elev-3: 0 2px 0 color-mix(in srgb, var(--shadow) 6%, transparent), 0 22px 48px -18px color-mix(in srgb, var(--shadow) 32%, transparent);
+  /* Elevation is quiet: a hairline contact shadow and a wide, faint ambient one. */
+  --elev-1: 0 1px 0 color-mix(in srgb, var(--shadow) 4%, transparent), 0 1px 2px color-mix(in srgb, var(--shadow) 5%, transparent);
+  --elev-2: 0 1px 0 color-mix(in srgb, var(--shadow) 4%, transparent), 0 8px 24px -12px color-mix(in srgb, var(--shadow) 18%, transparent);
+  --elev-3: 0 1px 0 color-mix(in srgb, var(--shadow) 5%, transparent), 0 30px 60px -30px color-mix(in srgb, var(--shadow) 30%, transparent);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --radius: 14px;
 }
 
 @theme inline {
@@ -31,12 +34,14 @@
   --color-line: var(--border);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-highlight: var(--highlight);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   --color-grid: var(--grid);
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-head), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, SFMono-Regular, Menlo, monospace;
   --shadow-elev-1: var(--elev-1);
   --shadow-elev-2: var(--elev-2);
   --shadow-elev-3: var(--elev-3);
@@ -53,6 +58,7 @@
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.55;
+    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -66,7 +72,10 @@
 
   h1,
   h2,
-  h3 {
+  h3,
+  h4 {
+    font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
@@ -120,76 +129,159 @@
 
 /* Component utilities ------------------------------------------------------------------------------ */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-[background-color,box-shadow,transform,color,border-color] duration-150 select-none disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-[11px] px-4 py-2.5 text-sm font-semibold select-none disabled:cursor-not-allowed disabled:opacity-50;
+  letter-spacing: -0.005em;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
   &:not(:disabled):active {
-    transform: translateY(1px);
+    transform: translateY(1px) scale(0.99);
   }
 }
+/* Primary: a solid key with a darker lip, so it reads as pressable rather than as a colored box. */
 @utility btn-primary {
   @apply btn bg-accent text-accent-fg;
-  box-shadow: var(--elev-1), inset 0 -2px 0 color-mix(in srgb, black 18%, transparent);
+  box-shadow:
+    inset 0 -2px 0 color-mix(in srgb, black 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+    0 1px 2px color-mix(in srgb, var(--accent) 30%, transparent);
   &:not(:disabled):hover {
-    background: color-mix(in srgb, var(--accent) 88%, var(--text));
-    box-shadow: var(--elev-2), inset 0 -2px 0 color-mix(in srgb, black 18%, transparent);
+    background: color-mix(in srgb, var(--accent) 90%, black);
+  }
+  &:not(:disabled):active {
+    box-shadow: inset 0 0 0 color-mix(in srgb, black 22%, transparent);
   }
 }
 @utility btn-ghost {
   @apply btn border border-line bg-surface text-text;
-  box-shadow: var(--elev-1);
+  box-shadow: inset 0 -1px 0 var(--border);
   &:not(:disabled):hover {
-    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    border-color: color-mix(in srgb, var(--text) 28%, var(--border));
+  }
+}
+@utility btn-quiet {
+  @apply btn text-muted;
+  &:not(:disabled):hover {
+    color: var(--text);
     background: var(--surface-2);
   }
 }
 @utility btn-sm {
-  @apply rounded-lg px-2.5 py-1.5 text-xs;
+  @apply rounded-[9px] px-2.5 py-1.5 text-xs;
 }
 @utility card {
-  @apply rounded-2xl border border-line bg-surface;
-  box-shadow: var(--elev-1);
+  @apply border border-line bg-surface;
+  border-radius: var(--radius);
 }
 @utility card-raised {
-  @apply rounded-2xl border border-line bg-surface;
+  @apply border border-line bg-surface;
+  border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--elev-2);
 }
 @utility card-link {
   transition:
-    box-shadow 180ms var(--ease-out),
-    transform 180ms var(--ease-out),
-    border-color 180ms var(--ease-out);
+    border-color 180ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out);
   &:hover {
-    box-shadow: var(--elev-2);
     transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    box-shadow: var(--elev-2);
+    border-color: color-mix(in srgb, var(--text) 22%, var(--border));
   }
 }
 @utility input {
-  @apply w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted;
+  @apply w-full rounded-[11px] border border-line bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-muted;
+  transition:
+    border-color 150ms var(--ease-out),
+    box-shadow 150ms var(--ease-out);
   &:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
   }
 }
 @utility label {
-  @apply text-[13px] font-semibold text-muted;
+  @apply font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase;
 }
+@utility eyebrow {
+  @apply font-mono text-[11px] font-medium tracking-[0.12em] text-muted uppercase;
+}
+/* Pill tabs: a recessed track with a raised, sliding-feel active pill. */
 @utility tab {
-  @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted transition-colors duration-150 hover:text-text;
+  @apply inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted hover:text-text;
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
 }
 @utility tab-active {
   @apply bg-surface text-text;
-  box-shadow: var(--elev-1);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 1px 2px color-mix(in srgb, var(--shadow) 10%, transparent);
+}
+@utility tab-track {
+  @apply inline-flex gap-1 rounded-full bg-surface-2 p-1;
 }
 @utility pill {
-  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-semibold;
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium;
+}
+/* Left-rule callout for rules, theorems, and warnings. Set --rule to recolor. */
+@utility callout {
+  @apply relative rounded-r-[10px] py-3 pr-4 pl-4;
+  --rule: var(--accent);
+  border-left: 3px solid var(--rule);
+  background: color-mix(in srgb, var(--rule) 6%, var(--surface));
+}
+@utility num {
+  @apply font-mono tabular-nums;
 }
 @utility graph-paper {
   background-color: var(--surface);
   background-image:
-    linear-gradient(color-mix(in srgb, var(--grid) 100%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--grid) 100%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
   background-position: -1px -1px;
+}
+@utility dot-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 13%, transparent) 1px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* Worksheet: numbered steps hang in a ruled margin, like a teacher's handout. */
+.worksheet {
+  --margin: 2.75rem;
+  position: relative;
+}
+.worksheet::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--margin) - 0.75rem);
+  width: 1px;
+  background: color-mix(in srgb, var(--highlight) 45%, transparent);
+}
+.ws-row {
+  display: grid;
+  grid-template-columns: var(--margin) minmax(0, 1fr);
+  align-items: start;
+}
+.ws-num {
+  font-family: var(--font-code), ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding-top: 0.2rem;
+  padding-right: 1.25rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ws-row[data-active="true"] .ws-num {
+  color: var(--accent);
 }
 
 /* Motion: the whiteboard writes itself once; everything else moves only in response to the student. */
@@ -233,13 +325,59 @@
 .step-in {
   animation: step-in 260ms var(--ease-out) both;
 }
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.rise {
+  animation: rise 520ms var(--ease-out) both;
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw {
+  stroke-dasharray: 1;
+  animation: draw 1100ms var(--ease-out) both;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 420ms var(--ease-spring) both;
+}
 @media (prefers-reduced-motion: reduce) {
   .write-in,
   .pen-stroke,
-  .step-in {
+  .step-in,
+  .rise,
+  .draw,
+  .pop {
     animation: none !important;
     clip-path: none !important;
     stroke-dashoffset: 0 !important;
+    filter: none !important;
   }
   * {
     transition-duration: 0ms !important;
@@ -267,16 +405,14 @@
 
 @utility page-title {
   font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  font-stretch: 112%;
-  font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.45rem);
-  line-height: 1.05;
-  letter-spacing: -0.015em;
+  font-weight: 600;
+  font-size: clamp(1.85rem, 1.4rem + 1.6vw, 2.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
 }
 @utility display-tight {
   font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif;
-  font-stretch: 112%;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
 }
 
 /* Whiteboard math: tight, left-aligned lines like handwriting on a board. */
@@ -287,4 +423,47 @@
 }
 .wb .katex-display > .katex {
   text-align: left;
+}
+
+/* Header navigation: quiet text links with an ink underline that grows in on the active page. */
+.nav-link {
+  position: relative;
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: -0.65rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  transform: scaleX(0);
+  transition: transform 240ms var(--ease-out);
+}
+.nav-link[data-active="true"] {
+  color: var(--text);
+}
+.nav-link[data-active="true"]::after {
+  transform: scaleX(1);
+}
+
+/* A barely-there ruled background for long reading surfaces. */
+.graph-paper-faint {
+  background-image: linear-gradient(color-mix(in srgb, var(--grid) 55%, transparent) 1px, transparent 1px);
+  background-size: 100% 28px;
 }

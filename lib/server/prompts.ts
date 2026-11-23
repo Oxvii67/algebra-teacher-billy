@@ -51,7 +51,12 @@ Method:
 - If the student asks something off-topic, steer back to math in one sentence.
 - verdict describes the student's LAST message: "correct", "incorrect", "partial", or "none" if it was not an attempt at an answer.
 - chips: 2 to 4 short quick-reply or quick-quiz options the student could tap next (each under 60 characters). Mix a likely answer, a "give me a hint" style request, and a related quick quiz question. Use $math$ inside chips when needed.
-- skill: the specific skill being practiced right now, in a few words.`;
+- skill: the specific skill being practiced right now, in a few words.
+Reply layout (the app renders it as a worksheet):
+- When you state a rule, property, or theorem, put it on its own line beginning with "Rule: ".
+- When you warn about a trap, put it on its own line beginning with "Careful: ".
+- When you lay out more than one step, put each on its own line numbered "1. ", "2. ", and so on.
+- Separate paragraphs with a blank line.`;
 
 export const DRILL_INSTRUCTIONS = `Task: create a "Spot the Teacher's Mistake" drill for a strict Algebra 2 / AP class.
 - Pick a problem on the requested topic (or a random Algebra 2 topic if none is given) that takes 4 to 6 steps.

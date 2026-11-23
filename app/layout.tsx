@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Atkinson_Hyperlegible_Next } from "next/font/google";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -8,8 +8,9 @@ import { Notice } from "@/components/shell/Notice";
 import { DataProvider } from "@/lib/data/DataProvider";
 import { themeBootScript } from "@/lib/themes";
 
-const head = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-head", display: "swap" });
-const body = Atkinson_Hyperlegible_Next({ subsets: ["latin"], variable: "--font-body", display: "swap", adjustFontFallback: false });
+const head = Space_Grotesk({ subsets: ["latin"], variable: "--font-head", display: "swap" });
+const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const code = JetBrains_Mono({ subsets: ["latin"], variable: "--font-code", display: "swap" });
 
 const SITE_URL = "https://www.algebrateacher.xyz";
 const SITE_TITLE = "Algebra Teacher Billy — Free Step-by-Step AI Math Tutor & Practice Tests";
@@ -55,7 +56,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${head.variable} ${body.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${head.variable} ${body.variable} ${code.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript() }} />
       </head>

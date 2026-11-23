@@ -9,6 +9,8 @@ export interface ThemeTokens {
   border: string;
   accent: string;
   accentFg: string;
+  /** Warm secondary highlight: margin rules, streaks, emphasis marks. */
+  highlight: string;
   success: string;
   danger: string;
   warning: string;
@@ -21,106 +23,117 @@ export interface ThemeTokens {
 export interface ThemeDef {
   id: ThemeId;
   name: string;
+  blurb: string;
   tokens: ThemeTokens;
 }
 
 export const THEMES: ThemeDef[] = [
   {
     id: "paper",
-    name: "Clean Paper Light",
+    name: "Studio Ivory",
+    blurb: "Warm alabaster paper, cobalt ink.",
     tokens: {
-      bg: "#f4f6fa",
+      bg: "#faf9f6",
       surface: "#ffffff",
-      surface2: "#eaeef5",
-      text: "#14213d",
-      muted: "#56607a",
-      border: "#cfd7e4",
-      accent: "#2346d6",
+      surface2: "#f3f1ec",
+      text: "#141413",
+      muted: "#5f5b53",
+      border: "#e5e2dc",
+      accent: "#1d4ed8",
       accentFg: "#ffffff",
-      success: "#1d7a4c",
-      danger: "#c8322b",
-      warning: "#9a5a06",
-      grid: "#dfe6f1",
-      shadow: "#14213d",
+      highlight: "#d97706",
+      success: "#15803d",
+      danger: "#b42318",
+      warning: "#b45309",
+      grid: "#eeebe5",
+      shadow: "#3a3226",
       scheme: "light",
     },
   },
   {
     id: "chalkboard",
-    name: "Midnight Chalkboard Dark",
+    name: "Midnight Slate",
+    blurb: "Cool graphite for late study sessions.",
     tokens: {
-      bg: "#17241f",
-      surface: "#1f2f29",
-      surface2: "#283b34",
-      text: "#eef3ea",
-      muted: "#a9bab0",
-      border: "#3d5349",
-      accent: "#f2d16b",
-      accentFg: "#17241f",
-      success: "#8fe3b0",
-      danger: "#ff9d90",
-      warning: "#f6c768",
-      grid: "#2b3f37",
+      bg: "#0e1116",
+      surface: "#151920",
+      surface2: "#1c212a",
+      text: "#e7e9ec",
+      muted: "#9aa2ad",
+      border: "#262c36",
+      accent: "#7aa2ff",
+      accentFg: "#0a0f1c",
+      highlight: "#f2b45a",
+      success: "#5cc994",
+      danger: "#ff8a7a",
+      warning: "#f2b45a",
+      grid: "#1b2028",
       shadow: "#000000",
       scheme: "dark",
     },
   },
   {
     id: "violet",
-    name: "Royal Violet Purple",
+    name: "Royal Indigo",
+    blurb: "Deep ink with a periwinkle accent.",
     tokens: {
-      bg: "#15112a",
-      surface: "#1f1939",
-      surface2: "#2a2250",
-      text: "#f3efff",
-      muted: "#b3aad8",
-      border: "#443a70",
-      accent: "#b9a0ff",
-      accentFg: "#15112a",
-      success: "#8fe8b4",
-      danger: "#ffa3b5",
-      warning: "#f8cf6f",
-      grid: "#2a2249",
+      bg: "#110f24",
+      surface: "#18162f",
+      surface2: "#211e3d",
+      text: "#eeecfb",
+      muted: "#a6a1c7",
+      border: "#2d2950",
+      accent: "#a5b4fc",
+      accentFg: "#110f24",
+      highlight: "#f9b77a",
+      success: "#7ad7a4",
+      danger: "#ff9aa8",
+      warning: "#f9c46b",
+      grid: "#1f1c3a",
       shadow: "#000000",
       scheme: "dark",
     },
   },
   {
     id: "sage",
-    name: "Forest Sage Green",
+    name: "Botanical Sage",
+    blurb: "Pressed-leaf greens on soft linen.",
     tokens: {
-      bg: "#edf2eb",
-      surface: "#fbfdf9",
-      surface2: "#e0e9dc",
-      text: "#17271b",
-      muted: "#506352",
-      border: "#bfcfbb",
-      accent: "#2a6638",
+      bg: "#f4f5ef",
+      surface: "#ffffff",
+      surface2: "#ebeee4",
+      text: "#17201a",
+      muted: "#56625a",
+      border: "#dde2d4",
+      accent: "#2f6b45",
       accentFg: "#ffffff",
-      success: "#2a6638",
-      danger: "#b0352c",
-      warning: "#8a5a06",
-      grid: "#d6e1d1",
-      shadow: "#17271b",
+      highlight: "#b8621b",
+      success: "#2f6b45",
+      danger: "#b42318",
+      warning: "#9a5b0b",
+      grid: "#e7ebdf",
+      shadow: "#25301f",
       scheme: "light",
     },
   },
   {
     id: "exam",
     name: "High-Contrast Exam",
+    blurb: "Black on white. Nothing extra.",
     tokens: {
       bg: "#ffffff",
       surface: "#ffffff",
-      surface2: "#eeeeee",
+      surface2: "#f0f0f0",
       text: "#000000",
-      muted: "#2e2e2e",
+      muted: "#262626",
       border: "#000000",
       accent: "#0033a0",
       accentFg: "#ffffff",
+      highlight: "#8a4b00",
       success: "#005a1e",
       danger: "#a30000",
       warning: "#6b4000",
-      grid: "#bdbdbd",
+      grid: "#c4c4c4",
       shadow: "#000000",
       scheme: "light",
     },
@@ -134,9 +147,9 @@ export interface CustomColors {
 }
 
 export const DEFAULT_CUSTOM: CustomColors = {
-  bg: "#f3f7f9",
-  text: "#102a33",
-  accent: "#0e7c86",
+  bg: "#f7f5f0",
+  text: "#1b1a17",
+  accent: "#0f766e",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -172,6 +185,7 @@ export function customTokens(c: CustomColors): ThemeTokens {
     border: mix(c.bg, c.text, 0.2),
     accent: c.accent,
     accentFg: luminance(c.accent) > 0.45 ? "#111111" : "#ffffff",
+    highlight: dark ? "#f2b45a" : "#c2610c",
     success: dark ? "#6ee7a8" : "#15803d",
     danger: dark ? "#fca5a5" : "#b91c1c",
     warning: dark ? "#fcd34d" : "#b45309",
@@ -196,6 +210,7 @@ export function applyTokens(t: ThemeTokens) {
   r.style.setProperty("--border", t.border);
   r.style.setProperty("--accent", t.accent);
   r.style.setProperty("--accent-fg", t.accentFg);
+  r.style.setProperty("--highlight", t.highlight ?? t.warning);
   r.style.setProperty("--success", t.success);
   r.style.setProperty("--danger", t.danger);
   r.style.setProperty("--warning", t.warning);
@@ -219,7 +234,7 @@ var id=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||"paper";
 var t=T[id];
 if(id==="custom"){t=JSON.parse(localStorage.getItem(${JSON.stringify(CUSTOM_TOKENS_KEY)})||"null");}
 if(!t)t=T.paper;
-var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
+var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",highlight:"--highlight",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
 for(var k in m)if(t[k])r.style.setProperty(m[k],t[k]);r.style.colorScheme=t.scheme;r.dataset.theme=id;
 }catch(e){}})();`;
 }

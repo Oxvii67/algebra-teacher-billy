@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Play, Search } from "lucide-react";
 import { MathText } from "@/components/math/Math";
 import { VideoEmbed } from "@/components/video/VideoEmbed";
-import { VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
+import { type Course, COURSES, VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
 
 const CHANNELS = ["All", "Khan Academy", "The Organic Chemistry Tutor", "3Blue1Brown"] as const;
 
@@ -20,6 +20,12 @@ export function VideosView() {
   const [playing, setPlaying] = useState<VideoMatch | null>(null);
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("All");
   const [topic, setTopic] = useState<string | null>(null);
+  const [course, setCourse] = useState<Course | "all">("all");
+  const topics = useMemo(() => VIDEO_TOPICS.filter((t) => course === "all" || t.course === course), [course]);
+  const courseVideos = useMemo(() => {
+    const seen = new Set<string>();
+    return topics.flatMap((t) => t.videos.map((v) => ({ ...v, topic: t.name, topicSlug: t.slug }))).filter((v) => !seen.has(v.id) && !!seen.add(v.id));
+  }, [topics]);
 
   const search = async (q: string) => {
     const text = q.trim();
@@ -48,7 +54,7 @@ export function VideosView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const browse = useMemo(() => (topic ? videosForSlug(topic) : null), [topic]);
+  const browse = useMemo(() => (topic ? videosForSlug(topic) : course !== "all" && !results ? courseVideos : null), [topic, course, results, courseVideos]);
   const list = (browse ?? results ?? []).filter((v) => channel === "All" || v.channel === channel);
 
   return (
@@ -88,7 +94,7 @@ export function VideosView() {
             <div className="mt-2">
               <div className="font-semibold">{playing.title}</div>
               <div className="text-sm text-muted">
-                {playing.channel} - {playing.topic}
+                {playing.channel}, {playing.topic}
               </div>
             </div>
           </div>
@@ -104,13 +110,15 @@ export function VideosView() {
       {(results || browse) && (
         <section className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="mr-2 font-semibold">{browse ? VIDEO_TOPICS.find((t) => t.slug === topic)?.name : "Matching lessons"}</h2>
+            <h2 className="mr-2 font-semibold">
+              {topic ? VIDEO_TOPICS.find((t) => t.slug === topic)?.name : browse ? COURSES.find((c) => c.id === course)?.label : "Matching lessons"}
+            </h2>
             {CHANNELS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setChannel(c)}
-                className={`rounded-full border px-3 py-1 text-xs ${channel === c ? "border-accent bg-accent text-accent-fg" : "border-line hover:bg-surface-2"}`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${channel === c ? "border-text bg-text text-bg" : "border-line hover:border-text/40"}`}
               >
                 {c}
               </button>
@@ -130,10 +138,35 @@ export function VideosView() {
         </section>
       )}
 
-      <section className="space-y-3">
-        <h2 className="font-semibold">Browse by topic</h2>
+      <section className="space-y-4" aria-labelledby="browse-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 id="browse-title" className="text-xl font-semibold">
+            Browse by course
+          </h2>
+          <span className="text-sm text-muted">
+            <span className="num">{topics.length}</span> topics, <span className="num">{courseVideos.length}</span> lessons
+          </span>
+        </div>
+        <div className="tab-track max-w-full flex-wrap rounded-[18px]" role="tablist" aria-label="Course">
+          {COURSES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={course === c.id}
+              onClick={() => {
+                setCourse(c.id);
+                setTopic(null);
+                if (c.id !== "all") setResults(null);
+              }}
+              className={`tab ${course === c.id ? "tab-active" : ""}`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
-          {VIDEO_TOPICS.map((t) => (
+          {topics.map((t) => (
             <button
               key={t.slug}
               type="button"
@@ -142,7 +175,7 @@ export function VideosView() {
                 const v = videosForSlug(t.slug);
                 setPlaying(v[0] ?? null);
               }}
-              className={`rounded-lg border px-3 py-1.5 text-sm ${topic === t.slug ? "border-accent bg-surface-2" : "border-line hover:bg-surface-2"}`}
+              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${topic === t.slug ? "border-accent text-accent" : "border-line hover:border-text/40"}`}
             >
               {t.name}
             </button>
@@ -164,7 +197,7 @@ function VideoGrid({ videos, playing, onPlay }: { videos: VideoMatch[]; playing:
             onPlay(v);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className={`card overflow-hidden text-left transition-colors hover:border-accent ${playing?.id === v.id ? "border-accent ring-2 ring-accent/40" : ""}`}
+          className={`card card-link overflow-hidden text-left ${playing?.id === v.id ? "border-accent" : ""}`}
         >
           <div className="relative aspect-video bg-black">
             {/* eslint-disable-next-line @next/next/no-img-element */}

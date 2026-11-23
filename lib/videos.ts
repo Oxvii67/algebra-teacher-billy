@@ -1,7 +1,7 @@
-import { type CuratedVideo, VIDEO_TOPICS, type VideoTopic } from "./videos.data";
+import { COURSES, type Course, type CuratedVideo, VIDEO_TOPICS, type VideoTopic } from "./videos.data";
 
-export { VIDEO_TOPICS };
-export type { CuratedVideo, VideoTopic };
+export { COURSES, VIDEO_TOPICS };
+export type { Course, CuratedVideo, VideoTopic };
 
 export interface VideoMatch extends CuratedVideo {
   topic: string;

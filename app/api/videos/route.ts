@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       try {
         pick = await generateJson<TopicPick>(gemini, {
           system:
-            "You map an Algebra 2 / AP student's request to lesson topics. Choose 1 to 3 slugs from the allowed list, most relevant first, including the foundational skill if the student seems to be missing one. searchQuery is a short YouTube search phrase for the exact skill. advice is one or two direct sentences, no emojis, no apologies, telling the student which video to watch first and why. Use $math$ for any math.",
+            "You map a math student's request (any course from pre-algebra through AP Calculus BC and AP Statistics) to lesson topics. Choose 1 to 3 slugs from the allowed list, most relevant first, including the foundational skill if the student seems to be missing one. searchQuery is a short YouTube search phrase for the exact skill. advice is one or two direct sentences, no emojis, no apologies, telling the student which video to watch first and why. Use $math$ for any math.",
           contents: [{ text: `Allowed slugs: ${slugs.join(", ")}\nStudent request: ${query}` }],
           schema: {
             type: "object",

@@ -3,6 +3,8 @@ import "./globals.css";
 import "katex/dist/katex.min.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppShell } from "@/components/shell/AppShell";
+import { Notice } from "@/components/shell/Notice";
+import { DataProvider } from "@/lib/data/DataProvider";
 import { themeBootScript } from "@/lib/themes";
 
 export const metadata: Metadata = {
@@ -23,7 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <DataProvider>
+            <AppShell>{children}</AppShell>
+            <Notice />
+          </DataProvider>
         </ThemeProvider>
       </body>
     </html>

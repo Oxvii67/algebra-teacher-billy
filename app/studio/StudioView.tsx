@@ -1,28 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LoaderCircle, RotateCcw } from "lucide-react";
 import { StudioInput } from "@/components/studio/StudioInput";
-import type { SolveInput } from "@/lib/types";
-import { MathBlock } from "@/components/math/Math";
+import { SolutionView } from "@/components/solve/SolutionView";
+import { useData } from "@/lib/data/DataProvider";
+import type { SavedSolution, SolveInput, SolveResult } from "@/lib/types";
+
+const STAGES = ["Reading the problem", "Solving every step", "Verifying each line", "Substituting the answer back in", "Matching prerequisite lessons"];
 
 export function StudioView() {
-  const [input, setInput] = useState<SolveInput | null>(null);
+  const { saveSolution, moveSolution, folders, recordActivity } = useData();
+  const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<SolveResult | null>(null);
+  const [saved, setSaved] = useState<SavedSolution | null>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!busy) return;
+    setStage(0);
+    const t = setInterval(() => setStage((s) => Math.min(STAGES.length - 1, s + 1)), 4500);
+    return () => clearInterval(t);
+  }, [busy]);
+
+  const solve = async (input: SolveInput) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/solve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "solve", input }),
+      });
+      const data = await res.json().catch(() => ({ error: "The server returned an unreadable response." }));
+      if (!res.ok) throw new Error(data.error ?? "Solve failed.");
+      const r = data as SolveResult;
+      setResult(r);
+      setSaved(await saveSolution(r));
+      recordActivity({ xp: 15, skill: r.topic });
+      requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-serif text-3xl font-semibold">Math Studio</h1>
-        <p className="mt-1 text-muted">Give me one problem. Photograph it, draw it, or type it.</p>
-      </header>
-      <StudioInput onSubmit={setInput} />
-      {input && (
-        <div className="card p-4">
-          {input.kind === "text" ? (
-            <MathBlock latex={input.latex} />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={input.dataUrl} alt="Submitted problem" className="max-h-64 rounded border border-line bg-white" />
-          )}
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-3xl font-semibold">Math Studio</h1>
+          <p className="mt-1 text-muted">One problem at a time. Photograph it, draw it, or type it.</p>
         </div>
+        {result && (
+          <button type="button" className="btn-ghost" onClick={() => setResult(null)}>
+            <RotateCcw className="h-4 w-4" /> New problem
+          </button>
+        )}
+      </header>
+
+      <div hidden={!!result}>
+        <StudioInput onSubmit={solve} busy={busy} />
+      </div>
+
+      {busy && (
+        <div className="card flex items-center gap-3 p-4" role="status" aria-live="polite">
+          <LoaderCircle className="h-5 w-5 animate-spin text-accent" />
+          <div>
+            <div className="font-medium">{STAGES[stage]}</div>
+            <div className="text-xs text-muted">Two passes: solve, then an independent check of every line. This takes 15 to 40 seconds.</div>
+          </div>
+        </div>
+      )}
+      {error && <div className="card border-danger p-4 text-sm text-danger">{error}</div>}
+
+      <div ref={topRef} />
+      {result && (
+        <SolutionView
+          result={result}
+          onSolveChallenge={(latex) => solve({ kind: "text", latex })}
+          toolbar={
+            saved && (
+              <select
+                className="input w-44 py-1 text-xs"
+                value={saved.folder_id ?? ""}
+                onChange={(e) => {
+                  const fid = e.target.value || null;
+                  moveSolution(saved.id, fid);
+                  setSaved({ ...saved, folder_id: fid });
+                }}
+                aria-label="Save to folder"
+              >
+                <option value="">Saved to History</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    Folder: {f.name}
+                  </option>
+                ))}
+              </select>
+            )
+          }
+        />
       )}
     </div>
   );

@@ -1,12 +1,12 @@
 import { errorResponse, generateJson, imagePart, type Part, requireKey } from "@/lib/server/ai";
-import { CHALLENGE_INSTRUCTIONS, SOLVE_INSTRUCTIONS, TEACHER_PERSONA, VERIFY_INSTRUCTIONS } from "@/lib/server/prompts";
-import { CHALLENGE_SCHEMA, type DraftSolution, SOLVE_SCHEMA, VERIFIED_SCHEMA, type VerifiedDraft } from "@/lib/server/schemas";
+import { CHALLENGE_INSTRUCTIONS, SOLVE_INSTRUCTIONS, TEACHER_PERSONA } from "@/lib/server/prompts";
+import { CHALLENGE_SCHEMA, VERIFIED_SCHEMA, type VerifiedDraft } from "@/lib/server/schemas";
 import { numericCheck } from "@/lib/mathCheck";
 import { bestVideoFor } from "@/lib/videos";
 import type { ChallengeResult, SolveResult } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 90;
 
 const MAX_IMAGE_CHARS = 11_000_000;
 
@@ -78,28 +78,15 @@ export async function POST(req: Request) {
     if (!body.input) return Response.json({ error: "Missing input." }, { status: 400 });
     const parts = problemParts(body.input);
 
-    // Pass 1: solve.
-    const draft = await generateJson<DraftSolution>(apiKey, {
+    // One structured call: the model solves, substitutes its answer back in, and self-corrects.
+    const verified = await generateJson<VerifiedDraft>(apiKey, {
       system: `${TEACHER_PERSONA}\n\n${SOLVE_INSTRUCTIONS}`,
       contents: parts,
-      schema: SOLVE_SCHEMA,
+      schema: VERIFIED_SCHEMA,
       temperature: 0.2,
     });
-    const firstCheck = numericCheck(draft.numericCheck);
 
-    // Pass 2: verify every line and substitute back in.
-    const checkNote = firstCheck.ran
-      ? firstCheck.passed
-        ? "An automatic numeric substitution of the draft's solutions returned zero residuals."
-        : `An automatic numeric substitution FAILED for the draft: ${JSON.stringify(firstCheck.details)}. Find the error.`
-      : "No automatic numeric check was possible for the draft.";
-    const verified = await generateJson<VerifiedDraft>(apiKey, {
-      system: `${TEACHER_PERSONA}\n\n${VERIFY_INSTRUCTIONS}`,
-      contents: [...parts, { text: `Draft solution JSON:\n${JSON.stringify(draft)}\n\n${checkNote}` }],
-      schema: VERIFIED_SCHEMA,
-      temperature: 0.1,
-    });
-
+    // The numeric substitution runs locally, so it costs no quota.
     const result = finalize(verified, numericCheck(verified.numericCheck));
     return Response.json(result);
   } catch (err) {

@@ -5,14 +5,14 @@ import { GoogleGenAI } from "@google/genai";
  * this module never reads it, so nothing here can leak a key to the client bundle.
  *
  * Quota policy: one request per attempt, never a fan-out. The primary model gets one retry after
- * a 2 second backoff on a 429. Only if that also fails with a quota, overload, or missing-model
+ * a 2.5 second backoff on a 429. Only if that also fails with a quota, overload, or missing-model
  * error does a single request go to the lite model. Nothing else is retried upstream.
  */
 
 /** Primary model. GEMINI_MODEL (server-only, optional) overrides it. */
 export const MODEL = "gemini-2.5-flash";
 const FALLBACK_MODEL = "gemini-2.5-flash-lite";
-const RATE_LIMIT_BACKOFF_MS = 2_000;
+const RATE_LIMIT_BACKOFF_MS = 2_500;
 const ATTEMPT_TIMEOUT_MS = 75_000;
 
 function primaryModel(): string {
@@ -86,7 +86,7 @@ async function once<T>(model: string, fn: (model: string, signal: AbortSignal) =
   }
 }
 
-/** At most three upstream requests: primary, primary after 2s (429 only), then lite. */
+/** At most three upstream requests: primary, primary after 2.5s (429 only), then lite. */
 async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>): Promise<T> {
   const primary = primaryModel();
   try {

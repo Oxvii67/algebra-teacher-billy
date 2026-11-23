@@ -8,8 +8,9 @@ import { SolutionView } from "@/components/solve/SolutionView";
 import { useData } from "@/lib/data/DataProvider";
 import type { SavedSolution, SolveInput, SolveResult } from "@/lib/types";
 import { exampleBySlug } from "@/lib/examples";
+import { compressImage } from "@/lib/image-compress";
 
-const STAGES = ["Billy is reading the problem", "Working every step", "Re-checking each line", "Plugging the answer back in", "Matching prerequisite lessons"];
+const STAGES = ["Reading the problem", "Working every step", "Plugging the answer back in", "Matching prerequisite lessons"];
 
 export function StudioView() {
   const { saveSolution, moveSolution, folders, recordActivity } = useData();
@@ -24,7 +25,7 @@ export function StudioView() {
   useEffect(() => {
     if (!busy) return;
     setStage(0);
-    const t = setInterval(() => setStage((s) => Math.min(STAGES.length - 1, s + 1)), 4500);
+    const t = setInterval(() => setStage((s) => Math.min(STAGES.length - 1, s + 1)), 3500);
     return () => clearInterval(t);
   }, [busy]);
 
@@ -35,7 +36,7 @@ export function StudioView() {
       const res = await fetch("/api/solve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "solve", input }),
+        body: JSON.stringify({ mode: "solve", input: input.kind === "image" ? { ...input, dataUrl: await compressImage(input.dataUrl) } : input }),
       });
       const data = await res.json().catch(() => ({ error: "The server returned an unreadable response." }));
       if (!res.ok) throw new Error(data.error ?? "Solve failed.");
@@ -74,7 +75,7 @@ export function StudioView() {
           <LoaderCircle className="h-5 w-5 animate-spin text-accent" />
           <div>
             <div className="font-medium">{STAGES[stage]}</div>
-            <div className="text-xs text-muted">Two passes: Billy solves it, then checks every line independently. Allow 15 to 40 seconds.</div>
+            <div className="text-xs text-muted">One pass: Billy solves it and substitutes the answer back in before you see it. Usually 8 to 20 seconds.</div>
           </div>
         </div>
       )}

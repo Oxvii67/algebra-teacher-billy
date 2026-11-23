@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ClipboardList, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
 import { StepList } from "@/components/solve/StepList";
-import { fileToDataUrl, shrinkImage } from "@/components/studio/imageUtils";
+import { compressAll } from "@/lib/image-compress";
 import { useData } from "@/lib/data/DataProvider";
 import { uid } from "@/lib/data/local";
 import { answersMatch } from "@/lib/grade";
@@ -27,6 +27,7 @@ export function PracticeTestView() {
   const [text, setText] = useState("");
   const [level, setLevel] = useState<TestLevel>("same");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ stage: Stage; done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [test, setTest] = useState<PracticeTest | null>(null);
   const [printKey, setPrintKey] = useState(false);
@@ -42,7 +43,13 @@ export function PracticeTestView() {
   const addFiles = useCallback(async (files: Blob[]) => {
     const imgs = files.filter((f) => f.type.startsWith("image/"));
     if (!imgs.length) return;
-    const urls = await Promise.all(imgs.map(async (f) => shrinkImage(await fileToDataUrl(f), 1400)));
+    let urls: string[];
+    try {
+      urls = await compressAll(imgs);
+    } catch (e) {
+      setError((e as Error).message);
+      return;
+    }
     setImages((prev) => {
       const next = [...prev, ...urls].slice(0, MAX);
       if (prev.length + urls.length > MAX) setError(`A test takes at most ${MAX} problems. Extra images were skipped.`);
@@ -71,14 +78,40 @@ export function PracticeTestView() {
   const generate = async () => {
     setBusy(true);
     setError(null);
+    setProgress({ stage: "reading", done: 0, total: 1 });
     try {
       const res = await fetch("/api/practice-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ images, text, level }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Test generation failed.");
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Test generation failed.");
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let data: { title: string; level: TestLevel; questions: PracticeTest["questions"] } | null = null;
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const ev = JSON.parse(line) as
+            | { type: "progress"; stage: Stage; done: number; total: number }
+            | { type: "result"; title: string; level: TestLevel; questions: PracticeTest["questions"] }
+            | { type: "error"; error: string };
+          if (ev.type === "progress") setProgress({ stage: ev.stage, done: ev.done, total: ev.total });
+          else if (ev.type === "error") throw new Error(ev.error);
+          else data = ev;
+        }
+      }
+      if (!data) throw new Error("The connection closed before the test was finished. Try again.");
       const t: PracticeTest = {
         id: uid(),
         title: data.title,
@@ -96,6 +129,7 @@ export function PracticeTestView() {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -216,15 +250,55 @@ export function PracticeTestView() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && (
+          <p className="callout text-sm" style={{ ["--rule" as string]: "var(--warning)" }}>
+            {error}
+          </p>
+        )}
+        {progress && <ProgressTrack progress={progress} />}
         <div className="flex justify-end">
           <button className="btn-primary" disabled={busy || (!images.length && !text.trim())} onClick={generate}>
             {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-            {busy ? "Writing and checking your test" : "Generate test"}
+            {busy ? "Building your test" : "Generate test"}
           </button>
         </div>
       </section>
     </div>
+  );
+}
+
+type Stage = "reading" | "verifying" | "writing";
+const STAGES: { id: Stage; label: string }[] = [
+  { id: "reading", label: "Reading paper" },
+  { id: "verifying", label: "Verifying algebra" },
+  { id: "writing", label: "Writing steps" },
+];
+
+function ProgressTrack({ progress }: { progress: { stage: Stage; done: number; total: number } }) {
+  const at = STAGES.findIndex((s) => s.id === progress.stage);
+  return (
+    <ol className="grid grid-cols-3 gap-2" role="status" aria-live="polite">
+      {STAGES.map((s, i) => {
+        const state = i < at ? "done" : i === at ? "active" : "todo";
+        const pct = state === "done" ? 100 : state === "active" ? (s.id === "verifying" && progress.total > 1 ? Math.max(12, (progress.done / progress.total) * 100) : 55) : 0;
+        return (
+          <li key={s.id}>
+            <div className="h-1 overflow-hidden rounded-full bg-surface-2">
+              <div className={`h-full rounded-full bg-accent transition-[width] duration-700 ${state === "active" ? "animate-pulse" : ""}`} style={{ width: `${pct}%` }} />
+            </div>
+            <div className={`mt-2 text-[13px] ${state === "todo" ? "text-muted" : "font-semibold"}`}>
+              {s.label}
+              {state === "active" ? "..." : ""}
+              {s.id === "verifying" && progress.total > 1 && state !== "todo" && (
+                <span className="num ml-1.5 text-xs font-normal text-muted">
+                  {progress.done}/{progress.total}
+                </span>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

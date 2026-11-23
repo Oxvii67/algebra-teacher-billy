@@ -70,9 +70,12 @@ export async function POST(req: Request) {
             required: ["slugs", "searchQuery", "advice"],
           },
           temperature: 0.2,
+          // Picking a topic needs no long reasoning, and this route stops at 30s (maxDuration).
+          thinkingBudget: 0,
+          budgetMs: 22_000,
         });
       } catch {
-        pick = null;
+        pick = null; // keyword ranking below still finds lessons
       }
     }
 

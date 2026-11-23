@@ -116,8 +116,9 @@ async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<
   const all = pool();
   const candidates = all.filter((m) => (bench.get(m) ?? 0) <= Date.now());
   for (const model of candidates) {
-    // Leave room for a backup provider when one is configured.
-    const left = deadline - Date.now() - (hasBackups() ? 15_000 : 0);
+    // Leave room for a backup provider when one is configured: 15s, or 30% of a short budget.
+    const remaining = deadline - Date.now();
+    const left = remaining - (hasBackups() ? Math.min(15_000, remaining * 0.3) : 0);
     if (left < 5_000) break;
     const ms = Math.min(model === all[0] ? PRIMARY_TIMEOUT_MS : FALLBACK_TIMEOUT_MS, left);
     try {
@@ -243,13 +244,15 @@ export async function generateJson<T>(
     schema: unknown;
     temperature?: number;
     thinkingBudget?: number;
+    /** Total time for every attempt, Gemini and backups. Keep it under the route's maxDuration. */
+    budgetMs?: number;
   },
 ): Promise<T> {
   const ai = client(apiKey);
   const contents = (opts.contents.length && "role" in (opts.contents[0] as object)
     ? opts.contents
     : [{ role: "user", parts: opts.contents as Part[] }]) as Turn[];
-  const deadline = Date.now() + TOTAL_BUDGET_MS;
+  const deadline = Date.now() + Math.min(opts.budgetMs ?? TOTAL_BUDGET_MS, TOTAL_BUDGET_MS);
   // A second pass is spent only on output that came back unusable, never on upstream errors.
   for (let attempt = 0; ; attempt++) {
     try {

@@ -4,25 +4,31 @@ import { GoogleGenAI } from "@google/genai";
  * Server-side Gemini helpers. The API key is read by route handlers in app/api/** and passed in;
  * this module never reads it, so nothing here can leak a key to the client bundle.
  *
- * Quota policy: one request per attempt, never a fan-out. The primary model gets one retry after
- * a 2.5 second backoff on a 429. Only if that also fails with a quota, overload, or missing-model
- * error does a single request go to the lite model. Nothing else is retried upstream.
+ * Quota policy: the free tier meters every model separately, so requests rotate through a pool of
+ * models. A model that answers 429 (quota), 503 (overloaded), or 404 (retired) is benched for a
+ * while and skipped, so a worn-out model costs nothing on later requests. Requests run one model at
+ * a time, never fanned out, and stop when the pool or the time budget runs out.
  */
 
 /** Primary model. GEMINI_MODEL (server-only, optional) overrides it. */
 export const MODEL = "gemini-3.6-flash";
-const FALLBACK_MODEL = "gemini-3.5-flash-lite";
+/** Rotation order after the primary: full flash models first, then the lite models. */
+const POOL = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"];
+/** The primary may think for a while; a fallback that has not answered by then is likely queued. */
+const PRIMARY_TIMEOUT_MS = 40_000;
+const FALLBACK_TIMEOUT_MS = 22_000;
+/** Kept under the shortest route maxDuration (60s) so the platform never cuts a request off. */
+const TOTAL_BUDGET_MS = 55_000;
 
 /** Lite models reject thinkingBudget 0, so they get no thinking config at all. */
 function thinkingFor(model: string, budget: number | undefined) {
   if (budget === undefined || /lite/i.test(model)) return undefined;
   return { thinkingBudget: budget };
 }
-const RATE_LIMIT_BACKOFF_MS = 2_500;
-const ATTEMPT_TIMEOUT_MS = 75_000;
 
-function primaryModel(): string {
-  return process.env.GEMINI_MODEL?.trim() || MODEL;
+function pool(): string[] {
+  const primary = process.env.GEMINI_MODEL?.trim() || MODEL;
+  return [primary, ...POOL.filter((m) => m !== primary)];
 }
 
 export type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
@@ -63,28 +69,35 @@ function isRateLimit(err: unknown): boolean {
   return upstreamStatus(err) === 429 || /RESOURCE_EXHAUSTED|rate.?limit|quota/i.test(errText(err));
 }
 
-/** Errors where one request to the fallback model is worth spending. */
-function shouldFallBack(err: unknown): boolean {
-  if (isRateLimit(err)) return true;
-  const s = upstreamStatus(err);
-  return s === 404 || s === 503 || /NOT_FOUND|UNAVAILABLE|overloaded|high demand|not supported for generateContent|AbortError|aborted|timed out/i.test(errText(err));
-}
-
 /** Seconds the upstream asked us to wait, if it said (RetryInfo.retryDelay, e.g. "27s"). */
 function retryDelaySeconds(err: unknown): number | undefined {
   const m = /"retryDelay":\s*"(\d+(?:\.\d+)?)s"/.exec(errText(err));
   return m ? Math.ceil(Number(m[1])) : undefined;
 }
 
-function logUpstream(model: string, attempt: string, err: unknown) {
-  console.error(`[gemini] model=${model} attempt=${attempt} status=${upstreamStatus(err) ?? "n/a"} ${errText(err).slice(0, 2000)}`);
+function logUpstream(model: string, attempt: number, err: unknown) {
+  console.error(`[gemini] model=${model} attempt=${attempt} status=${upstreamStatus(err) ?? "n/a"} ${errText(err).slice(0, 600)}`);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** model -> epoch ms until which it is skipped. Lives per server instance. */
+const bench = new Map<string, number>();
 
-async function once<T>(model: string, fn: (model: string, signal: AbortSignal) => Promise<T>): Promise<T> {
+function benchFor(err: unknown): number | null {
+  const s = upstreamStatus(err);
+  if (isRateLimit(err)) {
+    // A daily cap will not lift for hours; a per-minute cap lifts after the delay Google names.
+    if (/PerDay/i.test(errText(err))) return 60 * 60_000;
+    return ((retryDelaySeconds(err) ?? 60) + 2) * 1000;
+  }
+  if (s === 404 || /NOT_FOUND|no longer available|not supported for generateContent/i.test(errText(err))) return 6 * 60 * 60_000;
+  if (s === 503 || /UNAVAILABLE|overloaded|high demand/i.test(errText(err))) return 30_000;
+  if (/AbortError|aborted|timed out/i.test(errText(err))) return 3 * 60_000;
+  return null;
+}
+
+async function once<T>(model: string, fn: (model: string, signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), ms);
   try {
     return await fn(model, ctrl.signal);
   } finally {
@@ -92,34 +105,40 @@ async function once<T>(model: string, fn: (model: string, signal: AbortSignal) =
   }
 }
 
-/** At most three upstream requests: primary, primary after 2.5s (429 only), then lite. */
+function minutesUntilFree(): number {
+  const soonest = Math.min(...pool().map((m) => bench.get(m) ?? 0));
+  return Math.max(1, Math.ceil((soonest - Date.now()) / 60_000));
+}
+
+/** Walk the pool, skipping benched models, until one answers. */
 async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>): Promise<T> {
-  const primary = primaryModel();
-  try {
-    return await once(primary, fn);
-  } catch (err) {
-    logUpstream(primary, "1", err);
-    let last = err;
-    if (isRateLimit(err)) {
-      await sleep(RATE_LIMIT_BACKOFF_MS);
-      try {
-        return await once(primary, fn);
-      } catch (err2) {
-        logUpstream(primary, "2-backoff", err2);
-        last = err2;
-      }
-    }
-    if (!shouldFallBack(last) || primary === FALLBACK_MODEL) throw last;
+  const start = Date.now();
+  const all = pool();
+  const candidates = all.filter((m) => (bench.get(m) ?? 0) <= Date.now());
+  for (const model of candidates) {
+    const left = TOTAL_BUDGET_MS - (Date.now() - start);
+    if (left < 5_000) break;
+    const ms = Math.min(model === all[0] ? PRIMARY_TIMEOUT_MS : FALLBACK_TIMEOUT_MS, left);
     try {
-      const out = await once(FALLBACK_MODEL, fn);
-      console.warn(`[gemini] served by fallback model ${FALLBACK_MODEL}`);
+      const out = await once(model, fn, ms);
+      if (model !== all[0]) console.warn(`[gemini] served by ${model}`);
       return out;
-    } catch (err3) {
-      logUpstream(FALLBACK_MODEL, "fallback", err3);
-      // Report the more informative of the two: a quota error on either wins over a generic one.
-      throw isRateLimit(last) && !isRateLimit(err3) ? last : err3;
+    } catch (err) {
+      logUpstream(model, candidates.indexOf(model) + 1, err);
+      const benchMs = benchFor(err);
+      if (benchMs === null) throw err; // bad request or bad key: not a model problem, so do not rotate
+      bench.set(model, Date.now() + benchMs);
     }
   }
+  if (all.every((m) => (bench.get(m) ?? 0) > Date.now())) {
+    const mins = minutesUntilFree();
+    throw new AiError(
+      `Billy's free AI allowance is used up on every model for now. Try again in about ${mins} minute${mins === 1 ? "" : "s"}; your work on this page is kept.`,
+      429,
+      mins * 60,
+    );
+  }
+  throw new AiError("Every AI model Billy uses is busy right now. Send it again in a moment; your work on this page is kept.", 503, 10);
 }
 
 const DATA_URL = /^data:(image\/(?:png|jpe?g|webp|gif|heic|heif));base64,([A-Za-z0-9+/=]+)$/;

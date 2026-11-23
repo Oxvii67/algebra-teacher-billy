@@ -9,6 +9,7 @@ import {
   DEFAULT_CUSTOM,
   THEME_STORAGE_KEY,
   type ThemeId,
+  DEFAULT_THEME,
   tokensFor,
 } from "@/lib/themes";
 
@@ -22,12 +23,12 @@ interface ThemeCtx {
 const Ctx = createContext<ThemeCtx | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>("paper");
+  const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME);
   const [custom, setCustomState] = useState<CustomColors>(DEFAULT_CUSTOM);
 
   useEffect(() => {
     try {
-      const id = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null) ?? "paper";
+      const id = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null) ?? DEFAULT_THEME;
       const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
       const c = raw ? (JSON.parse(raw) as CustomColors) : DEFAULT_CUSTOM;
       setThemeState(id);

@@ -25,4 +25,4 @@ The app works without Supabase (guest mode, stored in `localStorage`) and withou
 
 ## Model note
 
-The default model is `gemini-3.6-flash`, with `gemini-3.5-flash-lite` as a one-shot fallback on quota, overload, or missing-model errors. Google retired `gemini-2.5-flash` for new API keys. Set `GEMINI_MODEL` to pin a specific model.
+The default model is `gemini-3.6-flash`. The free tier meters each model separately, so `lib/server/ai.ts` rotates through a pool (3.6, 3.8, 3.5-lite, 3.7, 3.5, 3.1-lite flash) and benches any model that hits its quota, is overloaded, or hangs, so later requests skip it. Set `GEMINI_MODEL` to change which model is tried first.

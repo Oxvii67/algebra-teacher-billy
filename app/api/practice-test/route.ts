@@ -14,8 +14,8 @@ interface RawTest {
 
 const LEVELS: TestLevel[] = ["same", "hard", "ap"];
 /** Source problems per model call. Batches run concurrently, capped so a full test is at most 4 calls. */
-const PER_BATCH = 3;
-const MAX_BATCHES = 4;
+const PER_BATCH = 5;
+const MAX_BATCHES = 2;
 
 export type TestProgress =
   | { type: "progress"; stage: "reading" | "verifying" | "writing"; done: number; total: number }

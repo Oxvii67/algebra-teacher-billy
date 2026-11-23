@@ -27,6 +27,9 @@ export interface ThemeDef {
   tokens: ThemeTokens;
 }
 
+/** Theme for visitors who have never picked one. */
+export const DEFAULT_THEME: ThemeId = "chalkboard";
+
 export const THEMES: ThemeDef[] = [
   {
     id: "paper",
@@ -52,22 +55,22 @@ export const THEMES: ThemeDef[] = [
   },
   {
     id: "chalkboard",
-    name: "Midnight Obsidian",
-    blurb: "Polished graphite for late sessions.",
+    name: "Midnight Black",
+    blurb: "True black with violet ink. The default.",
     tokens: {
-      bg: "#0f1013",
-      surface: "#16171b",
-      surface2: "#1d1f24",
+      bg: "#000000",
+      surface: "#0e0e11",
+      surface2: "#18181d",
       text: "#ededf0",
       muted: "#9c9ea8",
       border: "rgba(255, 255, 255, 0.08)",
-      accent: "#6e8eff",
-      accentFg: "#0a0d1a",
+      accent: "#8b7dff",
+      accentFg: "#0b0820",
       highlight: "#f0a24a",
       success: "#5cc994",
       danger: "#ff8a7a",
       warning: "#f2b45a",
-      grid: "#1a1c20",
+      grid: "#15151a",
       shadow: "#000000",
       scheme: "dark",
     },
@@ -230,10 +233,10 @@ export function themeBootScript(): string {
   THEMES.forEach((t) => (all[t.id] = t.tokens));
   return `(function(){try{
 var T=${JSON.stringify(all)};
-var id=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||"paper";
+var id=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||${JSON.stringify(DEFAULT_THEME)};
 var t=T[id];
 if(id==="custom"){t=JSON.parse(localStorage.getItem(${JSON.stringify(CUSTOM_TOKENS_KEY)})||"null");}
-if(!t)t=T.paper;
+if(!t)t=T[${JSON.stringify(DEFAULT_THEME)}];
 var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",highlight:"--highlight",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
 for(var k in m)if(t[k])r.style.setProperty(m[k],t[k]);r.style.colorScheme=t.scheme;r.dataset.theme=id;
 }catch(e){}})();`;

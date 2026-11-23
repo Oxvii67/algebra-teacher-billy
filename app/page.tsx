@@ -15,7 +15,7 @@ const INDEX: Record<string, string> = {
 };
 
 const CHIP: Record<string, string> = {
-  "/studio": "#5b4cf5",
+  "/studio": "var(--accent)",
   "/tutor": "#0ea5e9",
   "/practice-test": "#ff7a45",
   "/calculator": "#10b981",
@@ -66,7 +66,7 @@ export default function Home() {
         <dl className="mt-8 grid gap-4 sm:grid-cols-3">
           {METHOD.map(([title, body], i) => (
             <div key={title} className="card p-6">
-              <span className="chip-icon num text-base font-bold" style={{ ["--chip" as string]: ["#5b4cf5", "#10b981", "#ff7a45"][i] }}>
+              <span className="chip-icon num text-base font-bold" style={{ ["--chip" as string]: ["var(--accent)", "#10b981", "#ff7a45"][i] }}>
                 {i + 1}
               </span>
               <dt className="mt-4 text-lg font-semibold tracking-[-0.01em]">{title}</dt>

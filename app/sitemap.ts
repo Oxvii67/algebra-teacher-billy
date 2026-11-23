@@ -8,6 +8,8 @@ const routes: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: "/practice-test", priority: 0.8, changeFrequency: "weekly" },
   { path: "/calculator", priority: 0.8, changeFrequency: "monthly" },
   { path: "/videos", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
+  { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -137,6 +137,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:px-8 lg:pb-16 md:pt-10">
         <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <footer className="no-print mx-auto mt-24 flex w-full max-w-6xl flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-[13px] text-muted">
+          <span>Algebra Teacher Billy</span>
+          <Link href="/privacy" className="hover:text-text">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-text">
+            Terms
+          </Link>
+        </footer>
       </main>
 
       <nav

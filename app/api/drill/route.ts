@@ -16,6 +16,8 @@ export async function POST(req: Request) {
       contents: [{ text: topic ? `Topic: ${topic}` : "Topic: any Algebra 2 topic. Vary it." }],
       schema: DRILL_SCHEMA,
       temperature: 0.9,
+      thinkingBudget: 1024,
+      quick: true,
     });
     const steps = (d.steps ?? []).slice(0, 8);
     const idx = Number(d.mistakeIndex);

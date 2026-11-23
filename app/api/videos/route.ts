@@ -73,6 +73,7 @@ export async function POST(req: Request) {
           // Picking a topic needs no long reasoning, and this route stops at 30s (maxDuration).
           thinkingBudget: 0,
           budgetMs: 22_000,
+          quick: true,
         });
       } catch {
         pick = null; // keyword ranking below still finds lessons

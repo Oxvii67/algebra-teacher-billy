@@ -33,6 +33,8 @@ export async function POST(req: Request) {
       contents,
       schema: TUTOR_SCHEMA,
       temperature: 0.5,
+      thinkingBudget: 512,
+      quick: true,
     });
     return Response.json({
       reply: out.reply,

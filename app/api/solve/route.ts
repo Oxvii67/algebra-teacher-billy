@@ -71,6 +71,8 @@ export async function POST(req: Request) {
         contents: [{ text: `Original problem (LaTeX): ${latex}\nTopic: ${String(body.topic ?? "").slice(0, 200)}` }],
         schema: CHALLENGE_SCHEMA,
         temperature: 0.8,
+        thinkingBudget: 1024,
+        quick: true,
       });
       return Response.json(out);
     }
@@ -84,6 +86,7 @@ export async function POST(req: Request) {
       contents: parts,
       schema: VERIFIED_SCHEMA,
       temperature: 0.2,
+      thinkingBudget: 3072,
     });
 
     // The numeric substitution runs locally, so it costs no quota.

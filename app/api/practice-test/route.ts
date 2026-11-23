@@ -105,6 +105,7 @@ export async function POST(req: Request) {
               contents: batchParts(level, g),
               schema: TEST_SCHEMA,
               temperature: 0.5,
+              thinkingBudget: 2048,
             });
             done++;
             send({ type: "progress", stage: "verifying", done, total: groups.length });

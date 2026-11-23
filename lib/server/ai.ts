@@ -18,6 +18,9 @@ const POOL = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite", "
 /** The primary may think for a while; a fallback that has not answered by then is likely queued. */
 const PRIMARY_TIMEOUT_MS = 40_000;
 const FALLBACK_TIMEOUT_MS = 22_000;
+/** Short replies (tutor, drill, topic picks): a model that has not answered by now is stuck, not thinking. */
+const QUICK_PRIMARY_TIMEOUT_MS = 15_000;
+const QUICK_FALLBACK_TIMEOUT_MS = 8_000;
 /** Kept under the shortest route maxDuration (60s) so the platform never cuts a request off. */
 const TOTAL_BUDGET_MS = 55_000;
 
@@ -112,7 +115,7 @@ function minutesUntilFree(): number {
 }
 
 /** Walk the pool, skipping benched models, until one answers or the deadline nears. */
-async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>, deadline: number): Promise<T> {
+async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>, deadline: number, quick = false): Promise<T> {
   const all = pool();
   const candidates = all.filter((m) => (bench.get(m) ?? 0) <= Date.now());
   for (const model of candidates) {
@@ -120,7 +123,10 @@ async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<
     const remaining = deadline - Date.now();
     const left = remaining - (hasBackups() ? Math.min(15_000, remaining * 0.3) : 0);
     if (left < 5_000) break;
-    const ms = Math.min(model === all[0] ? PRIMARY_TIMEOUT_MS : FALLBACK_TIMEOUT_MS, left);
+    const ms = Math.min(
+      model === all[0] ? (quick ? QUICK_PRIMARY_TIMEOUT_MS : PRIMARY_TIMEOUT_MS) : quick ? QUICK_FALLBACK_TIMEOUT_MS : FALLBACK_TIMEOUT_MS,
+      left,
+    );
     try {
       const out = await once(model, fn, ms);
       if (model !== all[0]) console.warn(`[gemini] served by ${model}`);
@@ -172,8 +178,30 @@ export function cleanDeep<T>(v: T): T {
 
 class MalformedOutput extends AiError {}
 
+/**
+ * Models sometimes put LaTeX in JSON strings with a single backslash. "\frac" then parses as a
+ * form feed plus "rac", "\theta" as a tab plus "heta", and "\sqrt" is not a valid escape at all.
+ * Double a lone backslash when it starts a LaTeX command, or when it would be an invalid JSON
+ * escape, so the math survives JSON.parse. Correctly escaped "\\frac" is left alone.
+ */
+const LATEX_AFTER_JSON_ESCAPE =
+  /\\(?=(?:frac|forall|beta|binom|bar|bmod|boxed|big[lr]?|bullet|begin|backslash|text|times|theta|tan|tanh|tfrac|tau|tilde|top|triangle|to\b|right|rho|rangle|rfloor|rceil|neq|ne\b|nabla|not|notin|nu|nleq|ngeq|nmid|newline|vec|varphi|vartheta|varepsilon|vee|vdots)(?![a-z]))/g;
+
+export function repairLatexEscapes(raw: string): string {
+  return raw.replace(/(\\+)([a-zA-Z])/g, (m, slashes: string, ch: string, offset: number) => {
+    if (slashes.length % 2 === 0) return m; // already escaped
+    const rest = raw.slice(offset + slashes.length);
+    const needsDouble =
+      !/[bfnrtu"\\/]/.test(ch) || // invalid JSON escape such as \sqrt or \pi
+      (ch === "u" && !/^u[0-9a-fA-F]{4}/.test(rest)) || // \underline, not \u00e9
+      LATEX_AFTER_JSON_ESCAPE.test("\\" + rest);
+    LATEX_AFTER_JSON_ESCAPE.lastIndex = 0;
+    return needsDouble ? slashes + "\\" + ch : m;
+  });
+}
+
 function parseJson<T>(raw: string): T {
-  const t = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const t = repairLatexEscapes(raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, ""));
   try {
     return JSON.parse(t) as T;
   } catch {
@@ -246,6 +274,8 @@ export async function generateJson<T>(
     thinkingBudget?: number;
     /** Total time for every attempt, Gemini and backups. Keep it under the route's maxDuration. */
     budgetMs?: number;
+    /** Short answers: give up on a stuck model sooner and move to the next. */
+    quick?: boolean;
   },
 ): Promise<T> {
   const ai = client(apiKey);
@@ -273,6 +303,7 @@ export async function generateJson<T>(
                 },
               }),
             deadline,
+            opts.quick,
           );
           return res.text ?? "";
         },

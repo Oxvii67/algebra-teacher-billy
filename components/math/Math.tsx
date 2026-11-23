@@ -77,19 +77,20 @@ function renderText(t: string, key: string) {
 }
 
 /** Renders prose that contains $inline$ and $$block$$ math. Raw LaTeX never reaches the student. */
-export function MathText({ text, className }: { text: string; className?: string }) {
+export function MathText({ text, className, inline = false }: { text: string; className?: string; inline?: boolean }) {
   const segs = splitMath(text ?? "");
+  const Tag = inline ? "span" : "div";
   return (
-    <div className={className}>
+    <Tag className={className}>
       {segs.map((s, i) =>
         s.type === "text" ? (
           renderText(s.value, String(i))
         ) : s.type === "inline" ? (
           <MathInline key={i} latex={s.value} />
         ) : (
-          <MathBlock key={i} latex={s.value} />
+          inline ? <MathInline key={i} latex={s.value} /> : <MathBlock key={i} latex={s.value} />
         ),
       )}
-    </div>
+    </Tag>
   );
 }

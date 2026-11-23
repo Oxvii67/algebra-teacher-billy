@@ -82,3 +82,29 @@ export interface DraftSolution {
 export interface VerifiedDraft extends DraftSolution {
   verification: { verified: boolean; check: string; corrections: string[] };
 }
+
+export const TUTOR_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: str,
+    chips: strArr,
+    verdict: { type: "string", enum: ["correct", "incorrect", "partial", "none"] },
+    skill: str,
+  },
+  required: ["reply", "chips", "verdict", "skill"],
+} as const;
+
+export const DRILL_SCHEMA = {
+  type: "object",
+  properties: {
+    topic: str,
+    problemLatex: str,
+    steps: { type: "array", items: STEP_SCHEMA },
+    mistakeIndex: { type: "integer" },
+    trap: str,
+    explanation: str,
+    correctedLatex: str,
+    correctAnswerLatex: str,
+  },
+  required: ["topic", "problemLatex", "steps", "mistakeIndex", "trap", "explanation", "correctedLatex", "correctAnswerLatex"],
+} as const;

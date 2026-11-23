@@ -10,6 +10,7 @@ import {
   Eye,
   Lightbulb,
   LoaderCircle,
+  MessageSquare,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
@@ -234,6 +235,9 @@ export function SolutionView({
           {challengeBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           Challenge Me: Honors Version
         </button>
+        <Link href={`/tutor?p=${encodeURIComponent(result.problemLatex)}`} className="btn-ghost">
+          <MessageSquare className="h-4 w-4" /> Discuss with the teacher
+        </Link>
         {result.graphExpressions.length > 0 && (
           <Link href={calculatorHref(result.graphExpressions)} className="btn-ghost">
             <Calculator className="h-4 w-4" /> Open in Graphing Calculator

@@ -37,3 +37,25 @@ export const CHALLENGE_INSTRUCTIONS = `Task: write ONE harder Honors-level versi
 (for example: add a parameter, a non-monic leading coefficient, a domain restriction, an extraneous root, a second step, or a context).
 It must be solvable by hand by a strong Algebra 2 or AP student. Give problemLatex (pure LaTeX), whyHarder (one or two sentences, prose with $math$),
 a hint that points to the first move without giving it away, and the exact final answer in answerLatex. Solve it yourself first and verify the answer.`;
+
+export const TUTOR_INSTRUCTIONS = `You are running a Socratic tutoring session in a chat.
+Method:
+- Make the student do the thinking. Ask ONE focused question at a time. Keep replies short: 1 to 5 sentences plus at most one displayed equation.
+- Never hand over a full solution up front. Give the next step only after the student has genuinely attempted it at least twice, or asks directly after an attempt.
+- When the student is wrong, say so plainly ("No." or "That is not right.") and push back respectfully: name exactly which part fails, then make them confront it with a counterexample, a substitution check, or a pointed question. Do not supply the correction yourself on the first miss.
+- If the student insists on a wrong answer, do not cave. Hold your position, show the specific check that proves it fails, and ask them to find the error.
+- If the student is right, confirm in a few words, ask them to justify one step, then move forward.
+- If the student is right and you were wrong, correct yourself in one sentence without apologizing.
+- If the student asks something off-topic, steer back to math in one sentence.
+- verdict describes the student's LAST message: "correct", "incorrect", "partial", or "none" if it was not an attempt at an answer.
+- chips: 2 to 4 short quick-reply or quick-quiz options the student could tap next (each under 60 characters). Mix a likely answer, a "give me a hint" style request, and a related quick quiz question. Use $math$ inside chips when needed.
+- skill: the specific skill being practiced right now, in a few words.`;
+
+export const DRILL_INSTRUCTIONS = `Task: create a "Spot the Teacher's Mistake" drill for a strict Algebra 2 / AP class.
+- Pick a problem on the requested topic (or a random Algebra 2 topic if none is given) that takes 4 to 6 steps.
+- Write the worked solution as steps. Each step has latex (the line) and explanation (the claimed justification, prose with $math$).
+- Exactly ONE step must contain a classic algebra trap that real students make (sign error when distributing a negative, forgetting plus-or-minus, not flipping an inequality, (a+b)^2 = a^2 + b^2, cancelling terms instead of factors, not rejecting an extraneous root, misusing a log or exponent rule, i^2 handling). The mistake must be in the math of that line, not a typo.
+- Every step before the mistake must be correct. Every step after it must follow consistently from the wrong line, as if the teacher did not notice.
+- mistakeIndex is the 0-based index of the wrong step. Step 0 is the original problem and is never the mistake.
+- trap names the error in a few words. explanation says precisely why the step is wrong (prose with $math$). correctedLatex is the correct version of that line, and correctAnswerLatex is the correct final answer.
+- Before answering, re-derive the problem yourself and confirm that exactly one step is wrong and that it is the step at mistakeIndex.`;

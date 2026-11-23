@@ -110,3 +110,26 @@ export const EMPTY_PROFILE: Profile = {
   last_active_date: null,
   skill_mastery: {},
 };
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface TutorReply {
+  reply: string;
+  chips: string[];
+  verdict: "correct" | "incorrect" | "partial" | "none";
+  skill: string;
+}
+
+export interface Drill {
+  topic: string;
+  problemLatex: string;
+  steps: SolutionStep[];
+  mistakeIndex: number;
+  trap: string;
+  explanation: string;
+  correctedLatex: string;
+  correctAnswerLatex: string;
+}

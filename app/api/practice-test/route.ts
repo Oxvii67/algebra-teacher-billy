@@ -106,6 +106,7 @@ export async function POST(req: Request) {
               schema: TEST_SCHEMA,
               temperature: 0.5,
               thinkingBudget: 2048,
+              strong: true,
             });
             done++;
             send({ type: "progress", stage: "verifying", done, total: groups.length });

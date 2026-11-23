@@ -72,6 +72,7 @@ export async function POST(req: Request) {
         schema: CHALLENGE_SCHEMA,
         temperature: 0.8,
         thinkingBudget: 1024,
+        strong: true,
         quick: true,
       });
       return Response.json(out);
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
       schema: VERIFIED_SCHEMA,
       temperature: 0.2,
       thinkingBudget: 3072,
+      strong: true,
     });
 
     // The numeric substitution runs locally, so it costs no quota.

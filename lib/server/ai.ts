@@ -115,8 +115,14 @@ function minutesUntilFree(): number {
 }
 
 /** Walk the pool, skipping benched models, until one answers or the deadline nears. */
-async function withModel<T>(fn: (model: string, signal: AbortSignal) => Promise<T>, deadline: number, quick = false): Promise<T> {
-  const all = pool();
+async function withModel<T>(
+  fn: (model: string, signal: AbortSignal) => Promise<T>,
+  deadline: number,
+  quick = false,
+  strong = false,
+): Promise<T> {
+  // Lite models skip reasoning, which is where answers get checked; work that must be right avoids them.
+  const all = pool().filter((m) => !strong || !/lite/i.test(m));
   const candidates = all.filter((m) => (bench.get(m) ?? 0) <= Date.now());
   for (const model of candidates) {
     // Leave room for a backup provider when one is configured: 15s, or 30% of a short budget.
@@ -276,6 +282,11 @@ export async function generateJson<T>(
     budgetMs?: number;
     /** Short answers: give up on a stuck model sooner and move to the next. */
     quick?: boolean;
+    /**
+     * Answers that must be correct (solutions, answer keys, drills): never use a lite model, which
+     * does not reason. If every full Gemini model is out, a reasoning backup answers instead.
+     */
+    strong?: boolean;
   },
 ): Promise<T> {
   const ai = client(apiKey);
@@ -304,6 +315,7 @@ export async function generateJson<T>(
               }),
             deadline,
             opts.quick,
+            opts.strong,
           );
           return res.text ?? "";
         },

@@ -124,9 +124,10 @@
 .katex-display > .katex {
   white-space: nowrap;
 }
+/* KaTeX could not parse it: show it as plain readable text, never as an alarming red error. */
 .math-error {
-  color: var(--danger);
-  font-size: 0.9em;
+  color: inherit;
+  font-style: italic;
 }
 
 /* Component utilities ------------------------------------------------------------------------------ */

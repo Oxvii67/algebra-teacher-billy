@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       schema: DRILL_SCHEMA,
       temperature: 0.9,
       thinkingBudget: 1024,
+      strong: true,
       quick: true,
     });
     const steps = (d.steps ?? []).slice(0, 8);

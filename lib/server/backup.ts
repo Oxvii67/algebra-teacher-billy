@@ -86,50 +86,58 @@ export async function backupComplete(opts: {
     const left = opts.deadline - Date.now();
     if (left < 4_000) break;
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), Math.min(ATTEMPT_TIMEOUT_MS, left));
-    try {
-      const res = await fetch(ENDPOINT[b.provider], {
-        method: "POST",
-        signal: ctrl.signal,
-        headers: {
-          Authorization: `Bearer ${key}`,
-          "Content-Type": "application/json",
-          ...(b.provider === "openrouter" ? { "HTTP-Referer": SITE_URL, "X-Title": SITE_NAME } : {}),
-        },
-        body: JSON.stringify({
-          model: b.model,
-          messages,
-          temperature: opts.temperature,
-          max_tokens: 8192,
-          ...(opts.schema ? { response_format: { type: "json_object" } } : {}),
-        }),
-      });
-      const body = await res.text();
-      if (!res.ok) {
-        last = `${id} ${res.status} ${body.slice(0, 300)}`;
+    // Strict JSON mode first; if the provider's JSON validator rejects a long answer, ask the same
+    // model again without it. parseJson in ai.ts extracts and repairs the JSON either way.
+    for (const strictJson of opts.schema ? [true, false] : [false]) {
+      const left2 = opts.deadline - Date.now();
+      if (left2 < 4_000) break;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), Math.min(ATTEMPT_TIMEOUT_MS, left2));
+      try {
+        const res = await fetch(ENDPOINT[b.provider], {
+          method: "POST",
+          signal: ctrl.signal,
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+            ...(b.provider === "openrouter" ? { "HTTP-Referer": SITE_URL, "X-Title": SITE_NAME } : {}),
+          },
+          body: JSON.stringify({
+            model: b.model,
+            messages,
+            temperature: opts.temperature,
+            max_tokens: 8192,
+            ...(strictJson ? { response_format: { type: "json_object" } } : {}),
+          }),
+        });
+        const body = await res.text();
+        if (!res.ok) {
+          last = `${id} ${res.status} ${body.slice(0, 300)}`;
+          console.error(`[backup] ${last}`);
+          if (strictJson && res.status === 400 && /generate JSON|json_validate|failed_generation/i.test(body)) continue; // retry without strict mode
+          if (res.status === 401 || res.status === 403) bench.set(b.provider, Date.now() + 6 * 60 * 60_000); // bad key: skip the provider
+          else if (res.status === 429 || res.status === 413) bench.set(id, Date.now() + (Number(res.headers.get("retry-after")) || 60) * 1000 + 2_000);
+          else if (res.status === 404) bench.set(id, Date.now() + 60 * 60_000);
+          else bench.set(id, Date.now() + 30_000);
+          break;
+        }
+        const data = JSON.parse(body) as { choices?: { message?: { content?: string | null } }[] };
+        const text = data.choices?.[0]?.message?.content?.trim();
+        if (!text) {
+          last = `${id} returned an empty reply`;
+          bench.set(id, Date.now() + 30_000);
+          break;
+        }
+        console.warn(`[backup] served by ${id}${strictJson ? "" : " (plain JSON)"}`);
+        return text;
+      } catch (err) {
+        last = `${id} ${err instanceof Error ? err.message : String(err)}`;
         console.error(`[backup] ${last}`);
-        if (res.status === 401 || res.status === 403) bench.set(b.provider, Date.now() + 6 * 60 * 60_000); // bad key: skip the provider
-        else if (res.status === 429) bench.set(id, Date.now() + (Number(res.headers.get("retry-after")) || 60) * 1000 + 2_000);
-        else if (res.status === 404 || res.status === 400) bench.set(id, Date.now() + 60 * 60_000);
-        else bench.set(id, Date.now() + 30_000);
-        continue;
+        bench.set(id, Date.now() + 3 * 60_000); // timed out or the network failed
+        break;
+      } finally {
+        clearTimeout(timer);
       }
-      const data = JSON.parse(body) as { choices?: { message?: { content?: string | null } }[] };
-      const text = data.choices?.[0]?.message?.content?.trim();
-      if (!text) {
-        last = `${id} returned an empty reply`;
-        bench.set(id, Date.now() + 30_000);
-        continue;
-      }
-      console.warn(`[backup] served by ${id}`);
-      return text;
-    } catch (err) {
-      last = `${id} ${err instanceof Error ? err.message : String(err)}`;
-      console.error(`[backup] ${last}`);
-      bench.set(id, Date.now() + 3 * 60_000); // timed out or the network failed
-    } finally {
-      clearTimeout(timer);
     }
   }
   throw new BackupError(last);

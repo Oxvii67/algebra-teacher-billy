@@ -352,7 +352,7 @@ function TestRunner({
           <p className="label">{test.level === "ap" ? "AP level" : test.level === "hard" ? "Harder" : "Same level"}</p>
           <h1 className="page-title">{test.title}</h1>
           <p className="mt-1 text-sm text-muted">
-            {test.questions.length} questions, {test.max_score} points. Show your work on paper.
+            {test.questions.length} question{test.questions.length === 1 ? "" : "s"}, {test.max_score} point{test.max_score === 1 ? "" : "s"}. Show your work on paper.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

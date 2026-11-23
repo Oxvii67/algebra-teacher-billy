@@ -71,7 +71,9 @@ export const TEST_INSTRUCTIONS = `Task: build a practice test from the student's
 - Level "same": same difficulty and structure, different numbers. Level "hard": one step deeper (non-monic leading coefficients, extraneous roots, extra step, parameters). Level "ap": AP-exam style rigor, multi-step reasoning, justification, or context, still solvable by hand.
 - Use type "multiple_choice" for about a third of the questions (exactly 4 choices, with distractors built from real student mistakes; answer is the 0-based index as a string, e.g. "2"). Use "free_response" for the rest.
 - For free_response: answer is the canonical answer in mathjs syntax: a single value or expression, or a comma-separated list of values for multiple solutions (e.g. "1/2, 3" or "3*x^2 - 2" or "2 + 3i"). Use "none" if there is no solution. For intervals use the form "(-inf, 4]". instructions must tell the student exactly what to enter, for example "Enter all solutions separated by commas."
+- promptLatex is ONLY the mathematical object of the question in pure LaTeX: an equation, expression, function definition, or limit, e.g. f(x) = \\frac{x^2 - 4}{x^2 + x - 6} or \\lim_{x \\to -2} f(x). Never put English words, sentences, or dollar signs in promptLatex. All wording of the task goes in instructions, which may use $...$ for inline math.
 - answerLatex is the answer in LaTeX. choices are LaTeX strings with no dollar signs.
+- Every question must be well posed: the object must actually have every feature the question asks about (a hole needs a common factor in numerator and denominator, an asymptote needs a denominator zero that does not cancel, a limit must exist or the question must ask whether it exists). Check this before you return.
 - solution: the complete step-by-step worked solution, never skipping a step.
 - points: 1 to 5 based on difficulty. skill: a few words.
 - title: a short test title naming the topics.

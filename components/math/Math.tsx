@@ -40,7 +40,13 @@ function Fallback({ latex }: { latex: string }) {
   return <span className="math-error">{latex.replace(/\\[a-zA-Z]+/g, " ").replace(/[{}\\]/g, "").replace(/\s+/g, " ").trim()}</span>;
 }
 
+/** True when a "LaTeX" field is really prose with $...$ math inside, as models sometimes send. */
+function isMixed(s: string): boolean {
+  return /\$[^$]+\$|\\\(|\\\[/.test(s) && !/^\s*\$[^$]*\$\s*$/.test(s);
+}
+
 export function MathBlock({ latex, className }: { latex: string; className?: string }) {
+  if (isMixed(latex ?? "")) return <MathText text={latex} className={className} />;
   const m = cleanLatex(latex ?? "");
   const html = useMemo(() => (m ? render(m, true) : null), [m]);
   if (!m) return null;
@@ -48,6 +54,7 @@ export function MathBlock({ latex, className }: { latex: string; className?: str
 }
 
 export function MathInline({ latex }: { latex: string }) {
+  if (isMixed(latex ?? "")) return <MathText text={latex} inline />;
   const m = cleanLatex(latex ?? "");
   const html = useMemo(() => (m ? render(m, false) : null), [m]);
   if (!m) return null;

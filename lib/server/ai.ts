@@ -10,8 +10,14 @@ import { GoogleGenAI } from "@google/genai";
  */
 
 /** Primary model. GEMINI_MODEL (server-only, optional) overrides it. */
-export const MODEL = "gemini-2.5-flash";
-const FALLBACK_MODEL = "gemini-2.5-flash-lite";
+export const MODEL = "gemini-3.6-flash";
+const FALLBACK_MODEL = "gemini-3.5-flash-lite";
+
+/** Lite models reject thinkingBudget 0, so they get no thinking config at all. */
+function thinkingFor(model: string, budget: number | undefined) {
+  if (budget === undefined || /lite/i.test(model)) return undefined;
+  return { thinkingBudget: budget };
+}
 const RATE_LIMIT_BACKOFF_MS = 2_500;
 const ATTEMPT_TIMEOUT_MS = 75_000;
 
@@ -182,6 +188,9 @@ function wrapError(err: unknown): AiError {
     return new AiError("The AI service is overloaded. Try again in a moment.", 503, 10);
   }
   if (/AbortError|aborted|timed out/i.test(msg)) return new AiError("The AI took too long to answer. Try again.", 504);
+  if (status === 404 || /NOT_FOUND|no longer available/i.test(msg)) {
+    return new AiError("The AI model Billy uses is unavailable. Set GEMINI_MODEL on the server to a current Gemini model.", 502);
+  }
   return new AiError("The AI request failed. Try again in a moment.");
 }
 
@@ -212,7 +221,7 @@ export async function generateJson<T>(
             responseMimeType: "application/json",
             responseJsonSchema: opts.schema,
             temperature: opts.temperature ?? 0.2,
-            thinkingConfig: opts.thinkingBudget !== undefined ? { thinkingBudget: opts.thinkingBudget } : undefined,
+            thinkingConfig: thinkingFor(model, opts.thinkingBudget),
           },
         }),
       );
@@ -242,7 +251,7 @@ export async function generateText(
           abortSignal,
           systemInstruction: opts.system,
           temperature: opts.temperature ?? 0.5,
-          thinkingConfig: opts.thinkingBudget !== undefined ? { thinkingBudget: opts.thinkingBudget } : undefined,
+          thinkingConfig: thinkingFor(model, opts.thinkingBudget),
         },
       }),
     );

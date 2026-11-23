@@ -25,4 +25,4 @@ The app works without Supabase (guest mode, stored in `localStorage`) and withou
 
 ## Model note
 
-The spec targets `gemini-2.5-flash`. Google has retired that model for new API keys, so `lib/server/ai.ts` falls back automatically through newer flash models when the primary returns 404 or is overloaded. Set `GEMINI_MODEL` to pin a specific model.
+The default model is `gemini-3.6-flash`, with `gemini-3.5-flash-lite` as a one-shot fallback on quota, overload, or missing-model errors. Google retired `gemini-2.5-flash` for new API keys. Set `GEMINI_MODEL` to pin a specific model.

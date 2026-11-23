@@ -18,7 +18,7 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
   return (
     <div>
       {allowReveal && steps.length > 2 && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-4 flex justify-end">
           <button
             type="button"
             className="btn-ghost btn-sm"
@@ -37,12 +37,12 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
         {visible.map((s, i) => (
           <li
             key={i}
-            className={`ws-row border-b border-dashed border-line py-3.5 last:border-b-0 ${stepMode && i === shown - 1 && i > 0 ? "step-in" : ""}`}
+            className={`ws-row py-3 ${stepMode && i === shown - 1 && i > 0 ? "step-in" : ""}`}
             data-active={stepMode && i === shown - 1}
           >
             <span className="ws-num pt-[0.3rem]">{i + 1}</span>
             <div className="min-w-0">
-              <MathText text={s.explanation} className="text-[0.95rem] leading-relaxed" />
+              <MathText text={s.explanation} className="leading-relaxed" />
               {s.latex?.trim() && <MathBlock latex={s.latex} className="mt-1 [&_.katex-display]:mb-0 [&_.katex-display]:pb-0" />}
             </div>
           </li>
@@ -53,7 +53,7 @@ export function StepList({ steps, allowReveal = true }: { steps: SolutionStep[];
           <button type="button" className="btn-primary" onClick={() => setShown((n) => n + 1)}>
             <ChevronsDown className="h-4 w-4" /> Reveal step {shown + 1}
           </button>
-          <span className="text-sm text-muted">Write your next line on paper first, then check it.</span>
+          <span className="text-sm text-muted">Write the next line on paper first.</span>
         </div>
       )}
     </div>

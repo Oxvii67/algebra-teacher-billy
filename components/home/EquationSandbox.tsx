@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
-import { SANDBOX, type SandboxExample } from "@/lib/sandbox";
+import { SANDBOX, type SandboxCourse, type SandboxExample } from "@/lib/sandbox";
 
 const STEP_MS = 480;
 const W = 560;
 const H = 340;
+const COURSES: SandboxCourse[] = ["Algebra 2", "AP Precalculus", "AP Calculus"];
+/** Labels for phone widths, where three full course names do not fit side by side. */
+const SHORT: Record<SandboxCourse, string> = { "Algebra 2": "Algebra 2", "AP Precalculus": "Precalc", "AP Calculus": "Calculus" };
 const LABEL_FONT = 11.5;
 const CHAR_W = 6.9; // monospace advance at LABEL_FONT
 
@@ -273,28 +276,53 @@ export function EquationSandbox() {
 
   return (
     <div className="card-raised min-w-0 overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
-        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none]" role="tablist" aria-label="Worked examples">
-          {SANDBOX.map((e, i) => (
-            <button
-              key={e.id}
-              type="button"
-              role="tab"
-              aria-selected={i === active}
-              aria-controls="sandbox-panel"
-              onClick={() => {
-                setActive(i);
-                setRun((n) => n + 1);
-              }}
-              className={`tab shrink-0 whitespace-nowrap text-[13px] ${i === active ? "tab-active" : ""}`}
-            >
-              {e.tab}
-            </button>
-          ))}
+      <div className="border-b border-line px-4 pb-3 pt-4">
+        <div className="flex items-center gap-2">
+          <div className="tab-track grid min-w-0 flex-1 grid-cols-3" role="group" aria-label="Course">
+            {COURSES.map((c) => {
+              const first = SANDBOX.findIndex((e) => e.course === c);
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={ex.course === c}
+                  onClick={() => {
+                    if (ex.course === c) return;
+                    setActive(first);
+                    setRun((n) => n + 1);
+                  }}
+                  className={`tab justify-center px-2 text-[13px] whitespace-nowrap ${ex.course === c ? "tab-active" : ""}`}
+                >
+                  <span className="sm:hidden">{SHORT[c]}</span>
+                  <span className="hidden sm:inline">{c}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => setRun((n) => n + 1)} className="btn-quiet btn-sm shrink-0 px-2.5" aria-label="Replay the worked solution">
+            <RotateCcw className="h-4 w-4" />
+          </button>
         </div>
-        <button type="button" onClick={() => setRun((n) => n + 1)} className="btn-quiet btn-sm shrink-0 px-2.5" aria-label="Replay the worked solution">
-          <RotateCcw className="h-4 w-4" />
-        </button>
+        <div className="mt-3 flex gap-4" role="tablist" aria-label={`${ex.course} examples`}>
+          {SANDBOX.map((e, i) =>
+            e.course !== ex.course ? null : (
+              <button
+                key={e.id}
+                type="button"
+                role="tab"
+                aria-selected={i === active}
+                aria-controls="sandbox-panel"
+                onClick={() => {
+                  setActive(i);
+                  setRun((n) => n + 1);
+                }}
+                className={`border-b-2 pb-1 text-sm transition-colors duration-150 ${i === active ? "border-text font-medium text-text" : "border-transparent text-muted hover:text-text"}`}
+              >
+                {e.tab}
+              </button>
+            ),
+          )}
+        </div>
       </div>
 
       <div id="sandbox-panel" role="tabpanel" aria-label={`${ex.topic}, ${ex.course}, worked by Billy`}>

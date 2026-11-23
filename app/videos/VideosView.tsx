@@ -9,6 +9,9 @@ import { type Course, COURSES, VIDEO_TOPICS, type VideoMatch, videosForSlug } fr
 
 const CHANNELS = ["All", "Khan Academy", "The Organic Chemistry Tutor", "3Blue1Brown"] as const;
 
+/** Topics shown before "Show all": enough to scan in one look. */
+const TOPIC_PREVIEW = 16;
+
 export function VideosView() {
   const params = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
@@ -21,6 +24,7 @@ export function VideosView() {
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("All");
   const [topic, setTopic] = useState<string | null>(null);
   const [course, setCourse] = useState<Course | "all">("all");
+  const [showAll, setShowAll] = useState(false);
   const topics = useMemo(() => VIDEO_TOPICS.filter((t) => course === "all" || t.course === course), [course]);
   const courseVideos = useMemo(() => {
     const seen = new Set<string>();
@@ -147,7 +151,7 @@ export function VideosView() {
             <span className="num">{topics.length}</span> topics, <span className="num">{courseVideos.length}</span> lessons
           </span>
         </div>
-        <div className="tab-track max-w-full flex-wrap rounded-[18px]" role="tablist" aria-label="Course">
+        <div className="tab-track flex max-w-full overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Course">
           {COURSES.map((c) => (
             <button
               key={c.id}
@@ -157,16 +161,17 @@ export function VideosView() {
               onClick={() => {
                 setCourse(c.id);
                 setTopic(null);
+                setShowAll(false);
                 if (c.id !== "all") setResults(null);
               }}
-              className={`tab ${course === c.id ? "tab-active" : ""}`}
+              className={`tab shrink-0 whitespace-nowrap ${course === c.id ? "tab-active" : ""}`}
             >
               {c.label}
             </button>
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          {topics.map((t) => (
+          {(showAll ? topics : topics.slice(0, TOPIC_PREVIEW)).map((t) => (
             <button
               key={t.slug}
               type="button"
@@ -180,6 +185,11 @@ export function VideosView() {
               {t.name}
             </button>
           ))}
+          {!showAll && topics.length > TOPIC_PREVIEW && (
+            <button type="button" onClick={() => setShowAll(true)} className="rounded-full px-3.5 py-1.5 text-sm font-medium text-accent hover:underline">
+              Show all {topics.length} topics
+            </button>
+          )}
         </div>
       </section>
     </div>

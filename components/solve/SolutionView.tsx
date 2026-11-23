@@ -27,6 +27,43 @@ export function calculatorHref(exprs: string[]): string {
   return `/calculator?${q.toString()}`;
 }
 
+type Prereq = SolveResult["prerequisites"][number];
+
+/** One prerequisite: the skill, why it matters, a worked example, and the lesson only when asked for. */
+function Prerequisite({ p }: { p: Prereq }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="py-4 first:pt-0 last:pb-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold">{p.skill}</h3>
+          <MathText text={p.why} className="mt-1 text-muted" />
+          {p.example && <MathText text={p.example} className="mt-2 text-[15px]" />}
+        </div>
+        {p.videoId ? (
+          <button type="button" className="btn-ghost btn-sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <BookOpen className="h-4 w-4" aria-hidden="true" /> {open ? "Hide lesson" : "Watch lesson"}
+          </button>
+        ) : (
+          <a
+            className="btn-ghost btn-sm"
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent("Khan Academy " + p.videoQuery)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <BookOpen className="h-4 w-4" aria-hidden="true" /> Find a lesson
+          </a>
+        )}
+      </div>
+      {open && p.videoId && (
+        <div className="mt-4 max-w-xl">
+          <VideoEmbed id={p.videoId} title={p.videoTitle ?? p.skill} />
+        </div>
+      )}
+    </li>
+  );
+}
+
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);
   return (
@@ -90,119 +127,82 @@ export function SolutionView({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* (a) Detected problem */}
-      <section className="card p-5 sm:p-6">
+      <section className="card p-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="label">Problem</span>
-          {result.topic && <span className="pill py-0.5 text-xs">{result.topic}</span>}
+          <span className="label">{result.topic || "Problem"}</span>
           <div className="ml-auto flex flex-wrap gap-2">{toolbar}</div>
         </div>
         <MathBlock latex={result.problemLatex} className="mt-2 text-lg" />
-        {result.problemSummary && <MathText text={result.problemSummary} className="mt-1 text-sm text-muted" />}
-        {result.skills.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {result.skills.map((s) => (
-              <span key={s} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-muted">
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
+        {result.problemSummary && <MathText text={result.problemSummary} className="mt-1 text-muted" />}
+        {result.skills.length > 0 && <p className="mt-3 text-[13px] text-muted">Skills: {result.skills.join(", ")}</p>}
       </section>
 
-      {/* (b) Prerequisite skills */}
+      {/* (b) Prerequisite skills: one line each, lesson video on request */}
       {result.prerequisites.length > 0 && (
-        <section className="card p-5 sm:p-6">
-          <div className="eyebrow">Before you start</div>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
-            <BookOpen className="h-5 w-5 text-accent" /> Prerequisite skills
-          </h2>
-          <p className="mt-1 text-sm text-muted">If any of these is shaky, fix it first. The rest of the solution depends on it.</p>
-          <div className="mt-4 space-y-4">
+        <section className="card p-6">
+          <h2 className="text-lg font-semibold tracking-[-0.01em]">Know these first</h2>
+          <p className="mt-1 text-muted">If one is shaky, fix it before the steps below.</p>
+          <ul className="mt-4 divide-y divide-line">
             {result.prerequisites.map((p, i) => (
-              <div key={i} className="grid gap-4 border-t border-line pt-4 first:border-t-0 first:pt-0 lg:grid-cols-[1fr_320px]">
-                <div className="min-w-0">
-                  <h3 className="flex items-baseline gap-2.5 font-semibold">
-                    <span className="num text-xs text-highlight">{String(i + 1).padStart(2, "0")}</span>
-                    {p.skill}
-                  </h3>
-                  <MathText text={p.why} className="mt-1 text-sm" />
-                  <div className="callout mt-3">
-                    <div className="label mb-1">Quick example</div>
-                    <MathText text={p.example} className="text-sm" />
-                  </div>
-                </div>
-                {p.videoId ? (
-                  <div>
-                    <VideoEmbed id={p.videoId} title={p.videoTitle ?? p.skill} />
-                  </div>
-                ) : (
-                  <a
-                    className="btn-ghost self-start"
-                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent("Khan Academy " + p.videoQuery)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Find a lesson on YouTube
-                  </a>
-                )}
-              </div>
+              <Prerequisite key={i} p={p} />
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
       {/* (c) + (e) Teacher solution and simpler way */}
-      <section className="card p-5 sm:p-6">
-        <div className="tab-track mb-5 flex w-full sm:w-auto">
-          <button type="button" className={`tab flex-1 justify-center ${tab === "teacher" ? "tab-active" : ""}`} onClick={() => setTab("teacher")}>
+      <section className="card p-6">
+        <div className="tab-track mb-6 flex w-full sm:w-auto" role="tablist" aria-label="Solution method">
+          <button type="button" role="tab" aria-selected={tab === "teacher"} className={`tab flex-1 justify-center sm:flex-none ${tab === "teacher" ? "tab-active" : ""}`} onClick={() => setTab("teacher")}>
             Billy's solution
           </button>
           <button
             type="button"
-            className={`tab flex-1 justify-center ${tab === "simpler" ? "tab-active" : ""}`}
+            role="tab"
+            aria-selected={tab === "simpler"}
+            className={`tab flex-1 justify-center sm:flex-none ${tab === "simpler" ? "tab-active" : ""}`}
             onClick={() => setTab("simpler")}
           >
-            <Zap className="h-4 w-4" /> Faster way
+            <Zap className="h-4 w-4" aria-hidden="true" /> Faster way
           </button>
         </div>
         {tab === "teacher" ? (
           <StepList steps={result.steps} />
         ) : result.simplerMethod ? (
           <div>
-            <h3 className="mb-3 font-semibold">{result.simplerMethod.title}</h3>
+            <h3 className="mb-4 font-semibold">{result.simplerMethod.title}</h3>
             <StepList steps={result.simplerMethod.steps} />
           </div>
         ) : (
-          <p className="text-sm text-muted">There is no meaningfully faster method for this problem. The standard method above is the one to know.</p>
+          <p className="text-muted">No faster method is worth learning here. The steps in Billy's solution are the ones to know.</p>
         )}
       </section>
 
       {/* (d) Verified final answer */}
-      <section className="card p-5 sm:p-6" style={{ borderLeft: `3px solid ${v.verified ? "var(--success)" : "var(--warning)"}` }}>
+      <section className={`card p-6 ${v.verified ? "border-success/45" : "border-warning/45"}`}>
         <div className="flex flex-wrap items-center gap-2">
           {v.verified ? (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-success">
-              <ShieldCheck className="h-5 w-5" /> Verified final answer
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Answer, checked
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-warning">
-              <TriangleAlert className="h-5 w-5" /> Final answer, verification incomplete
+              <TriangleAlert className="h-4 w-4" aria-hidden="true" /> Answer, check not finished
             </span>
           )}
-          <div className="ml-auto flex gap-2">
-            <CopyButton text={result.finalAnswerPlain || result.finalAnswerLatex} label="Copy answer" />
-            <CopyButton text={result.finalAnswerLatex} label="Copy LaTeX" />
+          <div className="ml-auto">
+            <CopyButton text={result.finalAnswerPlain || result.finalAnswerLatex} label="Copy" />
           </div>
         </div>
         <MathBlock latex={result.finalAnswerLatex} className="mt-2 text-xl" />
-        <details className="mt-3 rounded-[10px] border border-line bg-surface p-3 text-sm">
-          <summary className="cursor-pointer font-medium">How this was checked</summary>
+        <details className="group mt-4 text-sm">
+          <summary className="cursor-pointer font-medium text-muted hover:text-text">How Billy checked it</summary>
           <MathText text={v.check} className="mt-2" />
           {v.corrections.length > 0 && (
             <div className="mt-3">
-              <div className="label mb-1">Corrections made during verification</div>
+              <div className="label mb-1">Fixed while checking</div>
               <ul className="list-disc space-y-1 pl-5">
                 {v.corrections.map((c, i) => (
                   <li key={i}>
@@ -212,18 +212,21 @@ export function SolutionView({
               </ul>
             </div>
           )}
+          <button type="button" className="mt-3 text-[13px] text-muted underline underline-offset-4 hover:text-text" onClick={() => navigator.clipboard?.writeText(result.finalAnswerLatex).catch(() => {})}>
+            Copy as LaTeX
+          </button>
         </details>
       </section>
 
       {result.commonMistakes.length > 0 && (
-        <section className="callout" style={{ ["--rule" as string]: "var(--danger)" }}>
-          <h2 className="flex items-center gap-2 font-semibold">
-            <TriangleAlert className="h-5 w-5 text-danger" /> Traps on this problem
+        <section className="card p-6">
+          <h2 className="flex items-center gap-2 text-lg font-semibold tracking-[-0.01em]">
+            <TriangleAlert className="h-4 w-4 text-warning" aria-hidden="true" /> Common traps
           </h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-4 space-y-3">
             {result.commonMistakes.map((m, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="num mt-0.5 shrink-0 text-xs text-danger">{String(i + 1).padStart(2, "0")}</span>
+              <li key={i} className="flex gap-3">
+                <span className="num mt-0.5 w-4 shrink-0 text-[13px] text-muted">{i + 1}</span>
                 <MathText text={m} />
               </li>
             ))}
@@ -232,25 +235,25 @@ export function SolutionView({
       )}
 
       {/* (f) Challenge and (g) graph */}
-      <section className="flex flex-wrap gap-2">
+      <section className="flex flex-wrap gap-2 pt-2">
         <button type="button" className="btn-primary" onClick={getChallenge} disabled={challengeBusy}>
           {challengeBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ChevronsUp className="h-4 w-4" />}
-          Challenge me: Honors version
+          Try a harder one
         </button>
         <Link href={`/tutor?p=${encodeURIComponent(result.problemLatex)}`} className="btn-ghost">
-          <MessageSquare className="h-4 w-4" /> Work through it with Billy
+          <MessageSquare className="h-4 w-4" aria-hidden="true" /> Ask Billy about it
         </Link>
         {result.graphExpressions.length > 0 && (
           <Link href={calculatorHref(result.graphExpressions)} className="btn-ghost">
-            <Calculator className="h-4 w-4" /> Open in graphing calculator
+            <Calculator className="h-4 w-4" aria-hidden="true" /> Graph it
           </Link>
         )}
       </section>
       {challengeErr && <p className="text-sm text-danger">{challengeErr}</p>}
 
       {challenge && (
-        <section className="card-raised p-5 sm:p-6">
-          <div className="label">Honors challenge</div>
+        <section className="card p-6">
+          <div className="label">Harder version</div>
           <MathBlock latex={challenge.problemLatex} className="mt-2 text-lg" />
           <MathText text={challenge.whyHarder} className="mt-1 text-sm text-muted" />
           <div className="mt-4 flex flex-wrap gap-2">
@@ -266,8 +269,8 @@ export function SolutionView({
               </button>
             )}
           </div>
-          {showHint && <MathText text={challenge.hint} className="callout mt-3 text-sm" />}
-          {showAnswer && <MathBlock latex={challenge.answerLatex} className="callout mt-3" />}
+          {showHint && <MathText text={challenge.hint} className="mt-4 rounded-[10px] bg-surface-2 px-4 py-3 text-sm" />}
+          {showAnswer && <MathBlock latex={challenge.answerLatex} className="mt-4 rounded-[10px] bg-surface-2 px-4 py-2" />}
         </section>
       )}
     </div>

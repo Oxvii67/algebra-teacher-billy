@@ -11,16 +11,16 @@ export type StudioTab = "image" | "draw" | "type";
 type Tab = StudioTab;
 
 const TABS: { id: Tab; label: string; icon: typeof ImageIcon }[] = [
-  { id: "type", label: "Type", icon: Keyboard },
-  { id: "image", label: "Photo", icon: ImageIcon },
-  { id: "draw", label: "Handwrite", icon: PenTool },
+  { id: "image", label: "Screenshot", icon: ImageIcon },
+  { id: "draw", label: "Draw", icon: PenTool },
+  { id: "type", label: "Keypad", icon: Keyboard },
 ];
 
 export function StudioInput({
   onSubmit,
   busy,
   submitLabel = "Solve it",
-  initialTab = "type",
+  initialTab = "image",
   initialLatex = "",
 }: {
   onSubmit: (input: SolveInput) => void;

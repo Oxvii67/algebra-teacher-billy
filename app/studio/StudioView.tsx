@@ -22,7 +22,7 @@ export function StudioView() {
   // A problem typed on the home page arrives as ?q= and starts solving at once.
   const q = params.get("q")?.trim().slice(0, 4000) ?? "";
   const modeParam = params.get("mode");
-  const initialTab: StudioTab = modeParam === "image" || modeParam === "draw" ? modeParam : "type";
+  const initialTab: StudioTab = q ? "type" : modeParam === "draw" || modeParam === "type" ? modeParam : "image";
   const startedQ = useRef(false);
   const [result, setResult] = useState<SolveResult | null>(example?.result ?? null);
   const [saved, setSaved] = useState<SavedSolution | null>(null);
@@ -71,7 +71,7 @@ export function StudioView() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Solve a problem</h1>
-          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example. Read the reason beside each line." : "One problem at a time. Type it, photograph it, or write it by hand."}</p>
+          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example. Read the reason beside each line." : "One problem at a time. Add a screenshot, draw it, or use the keypad."}</p>
         </div>
         {result && (
           <button type="button" className="btn-ghost" onClick={() => setResult(null)}>

@@ -172,7 +172,8 @@ export function cleanText(s: string): string {
 
 /** Recursively strips emojis and robotic apologies from every string in a JSON value. */
 export function cleanDeep<T>(v: T): T {
-  if (typeof v === "string") return cleanText(v) as T;
+  // Over-escaped LaTeX ("\\\\times" in the JSON): collapse \\cmd to \cmd so it is not a line break.
+  if (typeof v === "string") return cleanText(v.replace(/\\\\(?=[a-zA-Z]{2,})/g, "\\")) as T;
   if (Array.isArray(v)) return v.map(cleanDeep) as T;
   if (v && typeof v === "object") {
     const out: Record<string, unknown> = {};

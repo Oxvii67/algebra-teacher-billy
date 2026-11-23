@@ -32,7 +32,11 @@ export function normalizeAnswer(raw: string): string {
     .replace(/\\sqrt\{([^{}]+)\}/g, "sqrt($1)")
     .replace(/\\pi|π/g, "pi")
     .replace(/\\infty|∞|infinity/g, "inf")
-    .replace(/\\cdot|×/g, "*")
+    .replace(/\\cdot|\\times|×/g, "*")
+    // Scientific notation typed with the letter x: 1.56x10^22 means 1.56 * 10^22.
+    .replace(/(\d)\s*x\s*10\s*\^/g, "$1*10^")
+    // LaTeX exponent braces: 10^{22} -> 10^(22).
+    .replace(/\^\{([^{}]+)\}/g, "^($1)")
     .replace(/\\le|≤/g, "<=")
     .replace(/\\ge|≥/g, ">=")
     .replace(/−/g, "-")

@@ -8,8 +8,9 @@ import { StepList } from "@/components/solve/StepList";
 import { compressAll } from "@/lib/image-compress";
 import { useData } from "@/lib/data/DataProvider";
 import { uid } from "@/lib/data/local";
-import { answersMatch } from "@/lib/grade";
-import type { PracticeTest, TestLevel } from "@/lib/types";
+import { answersMatch, previewLatex } from "@/lib/grade";
+import { DictateButton } from "@/components/studio/DictateButton";
+import type { AnswerReview, PracticeTest, TestLevel } from "@/lib/types";
 
 const LEVELS: { id: TestLevel; name: string; desc: string }[] = [
   { id: "same", name: "Same level", desc: "Same skills, new numbers." },
@@ -25,6 +26,9 @@ export function PracticeTestView() {
   const { tests, saveTest, recordActivity, ready } = useData();
   const [images, setImages] = useState<string[]>([]);
   const [text, setText] = useState("");
+  const [request, setRequest] = useState("");
+  const [shortNote, setShortNote] = useState<string | null>(null);
+  const [voiceProblem, setVoiceProblem] = useState<string | null>(null);
   const [level, setLevel] = useState<TestLevel>("same");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ stage: Stage; done: number; total: number } | null>(null);
@@ -83,7 +87,7 @@ export function PracticeTestView() {
       const res = await fetch("/api/practice-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images, text, level }),
+        body: JSON.stringify({ images, text, request, level }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -92,7 +96,7 @@ export function PracticeTestView() {
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = "";
-      let data: { title: string; level: TestLevel; questions: PracticeTest["questions"] } | null = null;
+      let data: { title: string; level: TestLevel; questions: PracticeTest["questions"]; asked?: number } | null = null;
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -104,7 +108,7 @@ export function PracticeTestView() {
           if (!line) continue;
           const ev = JSON.parse(line) as
             | { type: "progress"; stage: Stage; done: number; total: number }
-            | { type: "result"; title: string; level: TestLevel; questions: PracticeTest["questions"] }
+            | { type: "result"; title: string; level: TestLevel; questions: PracticeTest["questions"]; asked?: number }
             | { type: "error"; error: string };
           if (ev.type === "progress") setProgress({ stage: ev.stage, done: ev.done, total: ev.total });
           else if (ev.type === "error") throw new Error(ev.error);
@@ -133,6 +137,8 @@ export function PracticeTestView() {
         max_score: data.questions.reduce((n: number, q: { points: number }) => n + q.points, 0),
         created_at: new Date().toISOString(),
       };
+      const got = data.questions.length;
+      setShortNote(data.asked && got < data.asked ? `Billy finished ${got} of the ${data.asked} questions before the AI ran out of room. The test below is complete as it stands; make a new one later for the rest.` : null);
       setTest(t);
       await saveTest(t);
       router.replace(`/practice-test?id=${t.id}`);
@@ -150,6 +156,7 @@ export function PracticeTestView() {
         test={test}
         printKey={printKey}
         setPrintKey={setPrintKey}
+        note={shortNote}
         onChange={(t) => {
           setTest(t);
           void saveTest(t);
@@ -166,6 +173,8 @@ export function PracticeTestView() {
           setTest(null);
           setImages([]);
           setText("");
+          setRequest("");
+          setShortNote(null);
           router.replace("/practice-test");
         }}
       />
@@ -176,13 +185,39 @@ export function PracticeTestView() {
     <div className="space-y-6">
       <header>
         <h1 className="page-title">Practice test</h1>
-        <p className="mt-2 text-muted">Paste up to 10 homework problems. Billy writes a graded test on the same skills.</p>
+        <p className="mt-2 text-muted">Tell Billy what to test you on, paste up to 10 homework problems, or both.</p>
       </header>
 
       <section className="card space-y-4 p-5">
         <div>
+          <div className="flex items-center justify-between gap-3">
+            <label className="label" htmlFor="request">
+              Tell Billy what you want
+            </label>
+            <DictateButton
+              disabled={busy}
+              onProblem={setVoiceProblem}
+              onText={(t) => setRequest((r) => (r.trim() ? `${r.trimEnd()} ${t}` : t).slice(0, 2000))}
+            />
+          </div>
+          <textarea
+            id="request"
+            className="input mt-1.5"
+            rows={3}
+            maxLength={2000}
+            value={request}
+            disabled={busy}
+            onChange={(e) => setRequest(e.target.value)}
+            placeholder="8 questions on domain and range of radical functions. No multiple choice. I keep mixing up the endpoints."
+          />
+          <p className="mt-1.5 text-[13px] text-muted" role={voiceProblem ? "alert" : undefined}>
+            {voiceProblem ?? "Optional if you add problems below. Name the topics, how many questions (up to 10), and what trips you up."}
+          </p>
+        </div>
+
+        <div>
           <label className="label" htmlFor="typed">
-            Problems, one per line
+            Problems to base it on, one per line
           </label>
           <textarea
             id="typed"
@@ -270,7 +305,7 @@ export function PracticeTestView() {
         )}
         {progress && <ProgressTrack progress={progress} />}
         <div className="flex justify-end">
-          <button className="btn-primary" disabled={busy || (!images.length && !text.trim())} onClick={generate}>
+          <button className="btn-primary" disabled={busy || (!images.length && !text.trim() && !request.trim())} onClick={generate}>
             {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
             {busy ? "Writing your test" : "Write my test"}
           </button>
@@ -318,7 +353,54 @@ function ProgressTrack({ progress }: { progress: { stage: Stage; done: number; t
 function isCorrect(q: PracticeTest["questions"][number], response: string): boolean {
   if (!response.trim()) return false;
   if (q.type === "multiple_choice") return response === q.answer;
-  return answersMatch(response, q.answer);
+  if (answersMatch(response, q.answer, { instructions: q.instructions })) return true;
+  return reviewOf(q, response)?.correct ?? false;
+}
+
+/** Billy's review of this exact response, if there is one. */
+function reviewOf(q: PracticeTest["questions"][number], response: string): AnswerReview | undefined {
+  return q.review?.response === response ? q.review : undefined;
+}
+
+function scoreOf(t: PracticeTest): number {
+  return t.questions.reduce((n, q) => n + (isCorrect(q, t.responses[q.id] ?? "") ? q.points : 0), 0);
+}
+
+/** Typed answers the instant grader could not match and Billy has not looked at yet. */
+function needsReview(t: PracticeTest) {
+  return t.questions.filter((q) => {
+    const r = t.responses[q.id] ?? "";
+    return q.type === "free_response" && r.trim() && !isCorrect(q, r) && !reviewOf(q, r);
+  });
+}
+
+/** Sends unmatched answers to Billy and returns the test with the reviews attached. */
+async function withReviews(t: PracticeTest): Promise<PracticeTest> {
+  const items = needsReview(t).map((q) => ({
+    id: q.id,
+    instructions: q.instructions,
+    promptLatex: q.promptLatex,
+    answer: q.answer,
+    answerLatex: q.answerLatex,
+    response: t.responses[q.id],
+  }));
+  if (!items.length) return t;
+  const res = await fetch("/api/grade", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+    signal: AbortSignal.timeout(58_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as { reviews?: (Omit<AnswerReview, "response"> & { id: string })[]; error?: string };
+  if (!res.ok || !data.reviews) throw new Error(data.error ?? "Billy could not review the answers.");
+  const byId = new Map(data.reviews.map((r) => [r.id, r]));
+  return {
+    ...t,
+    questions: t.questions.map((q) => {
+      const r = byId.get(q.id);
+      return r ? { ...q, review: { response: t.responses[q.id], correct: r.correct, readAsLatex: r.readAsLatex, note: r.note } } : q;
+    }),
+  };
 }
 
 function TestRunner({
@@ -328,6 +410,7 @@ function TestRunner({
   onNew,
   printKey,
   setPrintKey,
+  note,
 }: {
   test: PracticeTest;
   onChange: (t: PracticeTest) => void;
@@ -335,24 +418,56 @@ function TestRunner({
   onNew: () => void;
   printKey: boolean;
   setPrintKey: (v: boolean) => void;
+  note: string | null;
 }) {
   const graded = test.score !== null;
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
+  const [grading, setGrading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const pending = graded ? needsReview(test) : [];
+
+  // Tests graded by an older, stricter grader pick up the corrected score when opened.
+  const earned = graded ? scoreOf(test) : null;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  useEffect(() => {
+    if (earned !== null && earned !== test.score) onChangeRef.current({ ...test, score: earned });
+  }, [earned, test]);
+
   const respond = (qid: string, v: string) => {
-    if (graded) return;
+    if (graded || grading) return;
     onChange({ ...test, responses: { ...test.responses, [qid]: v } });
   };
 
-  const grade = () => {
-    const score = test.questions.reduce((n, q) => n + (isCorrect(q, test.responses[q.id] ?? "") ? q.points : 0), 0);
-    const t = { ...test, score };
+  /** Grades the test, or rechecks a graded one. If Billy is unavailable, the instant grades stand and can be rechecked. */
+  const grade = async () => {
+    if (grading) return;
+    const first = !graded;
+    setGrading(true);
+    setReviewError(null);
+    let t = test;
+    try {
+      t = await withReviews(test);
+      if (needsReview(t).length) setReviewError("Billy did not get to every answer.");
+    } catch (e) {
+      const m = (e as Error).name === "TimeoutError" ? "Billy took too long to review the answers." : (e as Error).message;
+      setReviewError(m);
+    } finally {
+      setGrading(false);
+    }
+    t = { ...t, score: scoreOf(t) };
     onChange(t);
-    onGraded(t);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (first) {
+      onGraded(t);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
-  const retake = () => onChange({ ...test, responses: {}, score: null });
+  const retake = () => {
+    setReviewError(null);
+    onChange({ ...test, questions: test.questions.map(({ review: _review, ...q }) => q), responses: {}, score: null });
+  };
   const answered = test.questions.filter((q) => (test.responses[q.id] ?? "").trim()).length;
   const pct = graded && test.max_score ? Math.round(((test.score ?? 0) / test.max_score) * 100) : 0;
 
@@ -374,11 +489,17 @@ function TestRunner({
           <button className="btn-ghost" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Print
           </button>
-          <button className="btn-ghost" onClick={onNew}>
+          <button className="btn-ghost" onClick={onNew} disabled={grading}>
             New test
           </button>
         </div>
       </header>
+
+      {note && !graded && (
+        <p className="no-print callout text-sm" style={{ ["--rule" as string]: "var(--warning)" }}>
+          {note}
+        </p>
+      )}
 
       {graded && (
         <section className={`no-print card border-2 p-5 ${pct >= 80 ? "border-success" : pct >= 60 ? "border-warning" : "border-danger"}`}>
@@ -392,10 +513,22 @@ function TestRunner({
                 {pct >= 90 ? "Strong work. Move up a level." : pct >= 70 ? "Solid, but the misses below are worth redoing by hand." : "Not there yet. Study each solution, then retake."}
               </div>
             </div>
-            <button className="btn-ghost ml-auto" onClick={retake}>
+            <button className="btn-ghost ml-auto" onClick={retake} disabled={grading}>
               <RotateCcw className="h-4 w-4" /> Retake
             </button>
           </div>
+          {pending.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-sm">
+              <span className="min-w-0 flex-1" role="status">
+                {reviewError ? `${reviewError} ` : ""}
+                {pending.length === 1 ? "1 typed answer did not match the key exactly." : `${pending.length} typed answers did not match the key exactly.`} Billy can check whether the math is right.
+              </span>
+              <button className="btn-primary btn-sm" onClick={grade} disabled={grading}>
+                {grading && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+                {grading ? "Billy is checking" : "Have Billy check"}
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -405,6 +538,7 @@ function TestRunner({
         {test.questions.map((q, n) => {
           const r = test.responses[q.id] ?? "";
           const ok = graded && isCorrect(q, r);
+          const review = graded ? reviewOf(q, r) : undefined;
           return (
             <section key={q.id} className={`card break-inside-avoid p-5 print:border-0 print:p-0 print:pb-6 ${graded ? (ok ? "border-success" : "border-danger") : ""}`}>
               <div className="flex items-start gap-3">
@@ -436,7 +570,7 @@ function TestRunner({
                               graded && isKey ? "border-success bg-success/10" : graded && chosen ? "border-danger bg-danger/10" : chosen ? "border-accent bg-surface-2" : "border-line hover:bg-surface-2"
                             } ${printKey && isKey ? "print:font-bold print:underline" : ""}`}
                           >
-                            <input type="radio" name={q.id} className="accent-[var(--accent)] print:hidden" checked={chosen} onChange={() => respond(q.id, String(i))} disabled={graded} />
+                            <input type="radio" name={q.id} className="accent-[var(--accent)] print:hidden" checked={chosen} onChange={() => respond(q.id, String(i))} disabled={graded || grading} />
                             <span className="font-semibold">{String.fromCharCode(65 + i)}.</span>
                             <MathInline latex={c} />
                           </label>
@@ -449,12 +583,12 @@ function TestRunner({
                         className="input font-mono"
                         value={r}
                         onChange={(e) => respond(q.id, e.target.value)}
-                        disabled={graded}
+                        disabled={graded || grading}
                         placeholder="Your answer, e.g. 1/2, 3"
                       />
                       {r.trim() && (
                         <div className="text-sm text-muted">
-                          Reads as: <MathInline latex={r.replace(/\*/g, "\\cdot ").replace(/sqrt\(([^()]+)\)/g, "\\sqrt{$1}")} />
+                          Reads as: <MathInline latex={review?.readAsLatex || previewLatex(r)} />
                         </div>
                       )}
                     </div>
@@ -469,7 +603,13 @@ function TestRunner({
 
                   {graded && (
                     <div className="no-print mt-3 space-y-2">
-                      {!ok && (
+                      {review?.note && (
+                        <div className="callout py-2 text-sm" style={{ ["--rule" as string]: ok ? "var(--success)" : "var(--danger)" }}>
+                          <span className="font-semibold">Billy: </span>
+                          <MathText text={review.note} inline />
+                        </div>
+                      )}
+                      {(!ok || review) && (
                         <div className="text-sm">
                           Correct answer: <MathInline latex={q.answerLatex} />
                         </div>
@@ -494,8 +634,8 @@ function TestRunner({
           <span className="text-sm text-muted">
             {answered}/{test.questions.length} answered
           </span>
-          <button className="btn-primary" onClick={grade} disabled={answered === 0}>
-            <Check className="h-4 w-4" /> Submit and grade
+          <button className="btn-primary" onClick={grade} disabled={answered === 0 || grading}>
+            {grading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {grading ? "Billy is checking" : "Submit and grade"}
           </button>
         </div>
       )}

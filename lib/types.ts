@@ -81,6 +81,16 @@ export interface TestQuestion {
   points: number;
   solution: SolutionStep[];
   skill: string;
+  /** Billy's second look at a typed answer. Applies only while the response is unchanged. */
+  review?: AnswerReview;
+}
+
+export interface AnswerReview {
+  response: string;
+  correct: boolean;
+  /** How Billy read what the student typed, LaTeX without delimiters. */
+  readAsLatex: string;
+  note: string;
 }
 
 export interface PracticeTest {

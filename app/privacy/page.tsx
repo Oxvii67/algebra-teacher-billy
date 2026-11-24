@@ -1,6 +1,6 @@
 export const metadata = { title: "Privacy policy", alternates: { canonical: "/privacy" } };
 
-const UPDATED = "November 23, 2026";
+const UPDATED = "November 24, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -27,7 +27,12 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-semibold">Where your problems go</h2>
         <p>
           To solve a problem, Billy sends its text or image to an AI model: Google Gemini first, and Groq or OpenRouter as backups when Gemini is busy.
-          Only the problem and your instructions are sent, never your email or account details.
+          Only the problem and your instructions are sent, never your email or account details. Typed practice test answers that do not match the key
+          exactly are sent the same way so Billy can check them.
+        </p>
+        <p>
+          The Speak button uses your browser&apos;s own voice typing. Some browsers, including Chrome and Safari, send the audio to their maker to turn it
+          into text. We receive only the text.
         </p>
         <p>
           Lesson videos play from YouTube in privacy-enhanced mode (youtube-nocookie.com). When you search for a lesson, your search words go to the AI model

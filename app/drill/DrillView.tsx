@@ -163,10 +163,10 @@ export function DrillView() {
                     }`}
                   >
                     <span className="mt-1 w-12 shrink-0 text-xs font-semibold text-muted">{i === 0 ? "Given" : `Step ${i}`}</span>
-                    <div className="min-w-0 flex-1">
-                      <MathBlock latex={s.latex} />
-                      <MathText text={s.explanation} className="text-sm text-muted" />
-                    </div>
+                    <span className="block min-w-0 flex-1">
+                      <MathBlock as="span" latex={s.latex} />
+                      <MathText inline text={s.explanation} className="text-sm text-muted" />
+                    </span>
                     {reveal && isMistake && <X className="mt-1 h-5 w-5 shrink-0 text-danger" />}
                   </button>
                 </li>

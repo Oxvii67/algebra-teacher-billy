@@ -1,4 +1,5 @@
 import { errorResponse, generateJson, imagePart, type Part, requireKey } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { TEACHER_PERSONA, TEST_INSTRUCTIONS } from "@/lib/server/prompts";
 import { answersOtherSubject, isOtherSubject } from "@/lib/server/scope";
 import { TEST_SCHEMA } from "@/lib/server/schemas";
@@ -102,6 +103,8 @@ function normalize(questions: RawQuestion[]): TestQuestion[] {
  * and self-checked in parallel, then one result (or error) event.
  */
 export async function POST(req: Request) {
+  const refused = guard(req, "practice-test", "heavy");
+  if (refused) return refused;
   let apiKey: string;
   let level: TestLevel;
   let sources: Source[];

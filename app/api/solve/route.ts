@@ -1,4 +1,5 @@
 import { errorResponse, generateJson, imagePart, type Part, requireKey } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { CHALLENGE_INSTRUCTIONS, SOLVE_INSTRUCTIONS, TEACHER_PERSONA } from "@/lib/server/prompts";
 import { CHALLENGE_SCHEMA, VERIFIED_SCHEMA, type VerifiedDraft } from "@/lib/server/schemas";
 import { answersOtherSubject, isOtherSubject, NOT_MATH_ERROR } from "@/lib/server/scope";
@@ -61,6 +62,8 @@ function finalize(d: VerifiedDraft, localCheck: ReturnType<typeof numericCheck>)
 }
 
 export async function POST(req: Request) {
+  const refused = guard(req, "solve", "heavy");
+  if (refused) return refused;
   try {
     const apiKey = requireKey(process.env.GEMINI_API_KEY);
     const body = (await req.json()) as Body;

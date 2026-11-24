@@ -1,4 +1,5 @@
-export const metadata = { title: "Terms of service", alternates: { canonical: "/terms" } };
+import { pageMeta } from "@/lib/pageMeta";
+export const metadata = pageMeta("/terms", "Terms of service", "The rules for using Algebra Teacher Billy.");
 
 const UPDATED = "November 23, 2026";
 

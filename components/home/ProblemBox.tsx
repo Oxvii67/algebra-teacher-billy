@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, Camera, PenTool } from "lucide-react";
-import { MathInline } from "@/components/math/Math";
+import { MathLabel } from "@/components/math/Math";
+import { mathSpeech } from "@/lib/mathSpeech";
 
 const TRY = ["2x^2 - 8x + 6 = 0", "\\log_2(x) + \\log_2(x - 2) = 3", "|2x - 5| = 9"];
 
@@ -61,7 +62,7 @@ export function ProblemBox() {
             onClick={() => go(t)}
             className="rounded-[8px] border border-line px-2.5 py-1 text-[13px] transition-colors duration-150 hover:border-text/40 hover:bg-surface-2"
           >
-            <MathInline latex={t} />
+            <MathLabel latex={t} say={`Solve ${mathSpeech(t)}`} />
           </button>
         ))}
       </div>

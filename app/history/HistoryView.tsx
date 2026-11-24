@@ -41,21 +41,21 @@ export function HistoryView() {
         </div>
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-          <input className="input pl-9" placeholder="Search saved problems" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input pl-9" type="search" aria-label="Search saved problems" placeholder="Search saved problems" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </header>
 
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-        <aside className="card h-fit space-y-1 p-2">
+        <aside aria-label="Folders" className="card h-fit space-y-1 p-2">
           <button className={item(sel({ kind: "all" }))} onClick={() => setFilter({ kind: "all" })}>
-            <FolderOpen className="h-4 w-4" /> All problems <span className="ml-auto text-xs opacity-70">{solutions.length}</span>
+            <FolderOpen className="h-4 w-4" /> All problems <span className="ml-auto text-xs">{solutions.length}</span>
           </button>
           <button className={item(sel({ kind: "unfiled" }))} onClick={() => setFilter({ kind: "unfiled" })}>
             <Inbox className="h-4 w-4" /> Unfiled
-            <span className="ml-auto text-xs opacity-70">{solutions.filter((s) => !s.folder_id).length}</span>
+            <span className="ml-auto text-xs">{solutions.filter((s) => !s.folder_id).length}</span>
           </button>
           <button className={item(sel({ kind: "tests" }))} onClick={() => setFilter({ kind: "tests" })}>
-            <ClipboardList className="h-4 w-4" /> Practice tests <span className="ml-auto text-xs opacity-70">{tests.length}</span>
+            <ClipboardList className="h-4 w-4" /> Practice tests <span className="ml-auto text-xs">{tests.length}</span>
           </button>
           <div className="px-3 pb-1 pt-3 label">Folders</div>
           {folders.map((f) =>
@@ -69,17 +69,17 @@ export function HistoryView() {
                   setEditing(null);
                 }}
               >
-                <input className="input py-1" autoFocus value={editName} onChange={(e) => setEditName(e.target.value)} onBlur={() => setEditing(null)} />
+                <input className="input py-1" autoFocus aria-label="Folder name" onKeyDown={(e) => e.key === "Escape" && setEditing(null)} value={editName} onChange={(e) => setEditName(e.target.value)} onBlur={() => setEditing(null)} />
               </form>
             ) : (
               <div key={f.id} className="group flex items-center">
                 <button className={item(sel({ kind: "folder", id: f.id }))} onClick={() => setFilter({ kind: "folder", id: f.id })}>
                   <Folder className="h-4 w-4 shrink-0" />
                   <span className="truncate">{f.name}</span>
-                  <span className="ml-auto text-xs opacity-70">{count(f.id)}</span>
+                  <span className="ml-auto text-xs">{count(f.id)}</span>
                 </button>
                 <button
-                  className="hidden p-1 text-muted hover:text-text group-hover:block"
+                  className="shrink-0 rounded p-1.5 text-muted hover:text-text"
                   aria-label={`Rename ${f.name}`}
                   onClick={() => {
                     setEditing(f.id);
@@ -89,7 +89,7 @@ export function HistoryView() {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  className="hidden p-1 text-muted hover:text-danger group-hover:block"
+                  className="shrink-0 rounded p-1.5 text-muted hover:text-danger"
                   aria-label={`Delete ${f.name}`}
                   onClick={() => {
                     if (confirm(`Delete folder "${f.name}"? Problems inside move to Unfiled.`)) {
@@ -113,14 +113,17 @@ export function HistoryView() {
               setFilter({ kind: "folder", id: f.id });
             }}
           >
-            <input className="input py-1.5" placeholder="New folder" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <input className="input py-1.5" aria-label="New folder name" placeholder="New folder" value={newName} onChange={(e) => setNewName(e.target.value)} />
             <button type="submit" className="btn-ghost btn-sm" aria-label="Create folder">
               <FolderPlus className="h-4 w-4" />
             </button>
           </form>
         </aside>
 
-        <section className="space-y-3">
+        <section className="min-w-0 space-y-3" aria-labelledby="binder-list">
+          <h2 id="binder-list" className="text-lg font-semibold">
+            {filter.kind === "tests" ? "Practice tests" : filter.kind === "unfiled" ? "Unfiled" : filter.kind === "folder" ? (folders.find((f) => f.id === filter.id)?.name ?? "Folder") : "All problems"}
+          </h2>
           {!ready && <p className="text-sm text-muted">Loading your work.</p>}
 
           {filter.kind === "tests" ? (
@@ -137,7 +140,7 @@ export function HistoryView() {
                       {t.score !== null ? `, scored ${t.score}/${t.max_score}` : ", not graded"} - {new Date(t.created_at).toLocaleDateString()}
                     </div>
                   </Link>
-                  <button className="p-1.5 text-muted hover:text-danger" aria-label="Delete test" onClick={() => confirm("Delete this test?") && deleteTest(t.id)}>
+                  <button className="p-1.5 text-muted hover:text-danger" aria-label={`Delete ${t.title}`} onClick={() => confirm("Delete this test?") && deleteTest(t.id)}>
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -151,7 +154,7 @@ export function HistoryView() {
                 <Link href={`/history/view?id=${s.id}`} className="min-w-0 flex-1">
                   <div className="truncate font-medium">{s.title}</div>
                   <div className="mt-1 max-w-full overflow-x-auto overflow-y-hidden py-1 text-sm text-muted">
-                    <MathInline latex={s.problem_latex.length > 140 ? s.problem_latex.slice(0, 140) : s.problem_latex} />
+                    <MathInline latex={s.problem_latex} />
                   </div>
                   <div className="mt-1 text-xs text-muted">
                     {s.topic} - {new Date(s.created_at).toLocaleString()}
@@ -171,7 +174,7 @@ export function HistoryView() {
                       </option>
                     ))}
                   </select>
-                  <button className="p-1.5 text-muted hover:text-danger" aria-label="Delete" onClick={() => confirm("Delete this saved problem?") && deleteSolution(s.id)}>
+                  <button className="p-1.5 text-muted hover:text-danger" aria-label={`Delete ${s.title}`} onClick={() => confirm("Delete this saved problem?") && deleteSolution(s.id)}>
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

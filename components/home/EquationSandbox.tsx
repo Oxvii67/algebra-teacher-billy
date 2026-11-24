@@ -358,7 +358,7 @@ export function EquationSandbox() {
                   >
                     <span className="block text-[13px] text-muted">{s.note}</span>
                     <span className="block overflow-x-auto text-[0.95rem] [&_.katex-display]:my-0 [&_.katex-display]:py-0.5 [&_.katex-display]:text-left [&_.katex-display>.katex]:text-left">
-                      <MathBlock latex={s.latex} />
+                      <MathBlock as="span" latex={s.latex} />
                     </span>
                   </button>
                 </li>

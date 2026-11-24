@@ -1,4 +1,5 @@
 import { errorResponse, generateJson, requireKey } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { DRILL_INSTRUCTIONS, TEACHER_PERSONA } from "@/lib/server/prompts";
 import { DRILL_SCHEMA } from "@/lib/server/schemas";
 import type { Drill } from "@/lib/types";
@@ -7,6 +8,8 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const refused = guard(req, "drill", "heavy");
+  if (refused) return refused;
   try {
     const apiKey = requireKey(process.env.GEMINI_API_KEY);
     const body = (await req.json().catch(() => ({}))) as { topic?: string };

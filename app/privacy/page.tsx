@@ -1,4 +1,5 @@
-export const metadata = { title: "Privacy policy", alternates: { canonical: "/privacy" } };
+import { pageMeta } from "@/lib/pageMeta";
+export const metadata = pageMeta("/privacy", "Privacy policy", "What Algebra Teacher Billy stores, where your problems go, and what it does not do.");
 
 const UPDATED = "November 24, 2026";
 

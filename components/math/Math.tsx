@@ -53,12 +53,14 @@ function isMixed(s: string): boolean {
   return /\$[^$]+\$|\\\(|\\\[/.test(s) && !/^\s*\$[^$]*\$\s*$/.test(s);
 }
 
-export function MathBlock({ latex, className }: { latex: string; className?: string }) {
-  if (isMixed(latex ?? "")) return <MathText text={latex} className={className} />;
+/** Display math. Use as="span" inside buttons and other phrasing-only elements, where a div is invalid HTML. */
+export function MathBlock({ latex, className, as: Tag = "div" }: { latex: string; className?: string; as?: "div" | "span" }) {
+  if (isMixed(latex ?? "")) return <MathText text={latex} className={className} inline={Tag === "span"} />;
   const m = cleanLatex(latex ?? "");
   const html = useMemo(() => (m ? render(m, true) : null), [m]);
   if (!m) return null;
-  return <div className={className}>{html ? <div dangerouslySetInnerHTML={{ __html: html }} /> : <Fallback latex={m} />}</div>;
+  const cls = Tag === "span" ? `block ${className ?? ""}` : className;
+  return <Tag className={cls}>{html ? <Tag className={Tag === "span" ? "block" : undefined} dangerouslySetInnerHTML={{ __html: html }} /> : <Fallback latex={m} />}</Tag>;
 }
 
 export function MathInline({ latex }: { latex: string }) {
@@ -67,6 +69,18 @@ export function MathInline({ latex }: { latex: string }) {
   const html = useMemo(() => (m ? render(m, false) : null), [m]);
   if (!m) return null;
   return html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : <Fallback latex={m} />;
+}
+
+/** Math as a button's whole content: drawn for the eye, spoken in words, read once. */
+export function MathLabel({ latex, say }: { latex: string; say: string }) {
+  return (
+    <>
+      <span aria-hidden="true">
+        <MathInline latex={latex} />
+      </span>
+      <span className="sr-only">{say}</span>
+    </>
+  );
 }
 
 type Segment = { type: "text" | "inline" | "block"; value: string };

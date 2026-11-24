@@ -533,7 +533,7 @@ function TestRunner({
       )}
 
       <div className="print-area space-y-4">
-        <h1 className="hidden display-tight text-xl font-semibold print:block">{test.title}</h1>
+        <p className="hidden display-tight text-xl font-semibold print:block">{test.title}</p>
         <p className="hidden text-sm print:block">Name: ______________________ Date: ____________ Score: ______ / {test.max_score}</p>
         {test.questions.map((q, n) => {
           const r = test.responses[q.id] ?? "";
@@ -581,6 +581,7 @@ function TestRunner({
                     <div className="no-print space-y-1.5">
                       <input
                         className="input font-mono"
+                        aria-label={`Answer to question ${n + 1}`}
                         value={r}
                         onChange={(e) => respond(q.id, e.target.value)}
                         disabled={graded || grading}

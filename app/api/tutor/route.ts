@@ -1,4 +1,5 @@
 import { errorResponse, generateJson, requireKey, type Turn } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { TEACHER_PERSONA, TUTOR_INSTRUCTIONS } from "@/lib/server/prompts";
 import { answersOtherSubject, isOtherSubject, REFUSAL_CHIPS, safeDistress, safeRefusal } from "@/lib/server/scope";
 import { TUTOR_SCHEMA } from "@/lib/server/schemas";
@@ -13,6 +14,8 @@ function lineBreaks(s: string): string {
 }
 
 export async function POST(req: Request) {
+  const refused = guard(req, "tutor", "light");
+  if (refused) return refused;
   try {
     const apiKey = requireKey(process.env.GEMINI_API_KEY);
     const body = (await req.json()) as { messages?: ChatMessage[]; problemLatex?: string };

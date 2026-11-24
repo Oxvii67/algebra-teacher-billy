@@ -1,4 +1,5 @@
 import { errorResponse, generateJson, requireKey } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { TEACHER_PERSONA } from "@/lib/server/prompts";
 import { GRADE_INSTRUCTIONS, GRADE_SCHEMA } from "@/lib/server/gradePrompt";
 
@@ -25,6 +26,8 @@ const clip = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 
 /** Second look at answers the instant grader could not match: is it the same math, written differently? */
 export async function POST(req: Request) {
+  const refused = guard(req, "grade", "light");
+  if (refused) return refused;
   try {
     const apiKey = requireKey(process.env.GEMINI_API_KEY);
     const body = (await req.json()) as { items?: Partial<Item>[] };

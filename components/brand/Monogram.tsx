@@ -18,7 +18,7 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
     <span className="flex items-center gap-2.5">
       <Monogram size={compact ? 28 : 30} className="shrink-0" />
       <span className="flex items-baseline gap-1.5 leading-none">
-        <span className="font-display text-[17px] font-semibold tracking-[-0.03em]">Billy</span>
+        <span className="font-display text-[17px] font-semibold tracking-[-0.03em]">Billy</span>{" "}
         {!compact && <span className="hidden text-[13px] font-medium text-muted xl:inline">Algebra Teacher</span>}
       </span>
     </span>

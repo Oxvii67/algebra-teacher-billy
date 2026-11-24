@@ -1,7 +1,8 @@
+import { pageMeta } from "@/lib/pageMeta";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { AccountPanel } from "./AccountPanel";
 
-export const metadata = { title: "Settings and themes" };
+export const metadata = pageMeta("/settings", "Settings and themes", "Choose a theme and manage your account.", { index: false });
 
 export default function SettingsPage() {
   return (

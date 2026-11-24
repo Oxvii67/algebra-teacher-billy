@@ -1,4 +1,5 @@
 import { errorResponse, generateJson } from "@/lib/server/ai";
+import { guard } from "@/lib/server/guard";
 import { rankTopics, VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
 
 export const runtime = "nodejs";
@@ -46,6 +47,8 @@ function decodeEntities(s: string): string {
 }
 
 export async function POST(req: Request) {
+  const refused = guard(req, "videos", "light");
+  if (refused) return refused;
   try {
     const body = (await req.json()) as { query?: string };
     const query = String(body.query ?? "").trim().slice(0, 300);

@@ -1,7 +1,8 @@
+import { pageMeta } from "@/lib/pageMeta";
 import { MathInline } from "@/components/math/Math";
 import { PrintButton } from "./PrintButton";
 
-export const metadata = { title: "Formula sheet" };
+export const metadata = pageMeta("/cheat-sheet", "Formula sheet", "Printable one-page math formula sheet: quadratics, exponents, logarithms, trigonometry and more.");
 
 type Row = [label: string, latex: string];
 
@@ -137,11 +138,11 @@ export default function CheatSheetPage() {
       </header>
 
       <article className="print-area card p-5 print:p-0 print:text-[8.5px] print:leading-tight">
-        <h2 className="mb-3 hidden display-tight text-base font-semibold print:block">Algebra Teacher Billy: Algebra 2 and AP Precalculus Formula Sheet</h2>
+        <p className="mb-3 hidden display-tight text-base font-semibold print:block">Algebra Teacher Billy: Algebra 2 and AP Precalculus Formula Sheet</p>
         <div className="columns-1 gap-6 sm:columns-2 lg:columns-3 print:columns-3 print:gap-4">
           {SECTIONS.map((s) => (
             <section key={s.title} className="mb-5 break-inside-avoid print:mb-2">
-              <h3 className="mb-1.5 border-b border-line pb-1 text-sm font-semibold text-accent print:mb-0.5 print:text-[9.5px] print:text-black">{s.title}</h3>
+              <h2 className="mb-1.5 border-b border-line pb-1 text-sm font-semibold text-accent print:mb-0.5 print:text-[9.5px] print:text-black">{s.title}</h2>
               <dl className="space-y-1.5 print:space-y-0.5">
                 {s.rows.map(([label, latex]) => (
                   <div key={label}>

@@ -6,6 +6,7 @@ import { ArrowUp, RotateCcw } from "lucide-react";
 import { MathBlock, MathText } from "@/components/math/Math";
 import { WorksheetText } from "@/components/math/WorksheetText";
 import { useData } from "@/lib/data/DataProvider";
+import { mathSpeech } from "@/lib/mathSpeech";
 import type { ChatMessage, TutorReply } from "@/lib/types";
 
 const STARTERS = [
@@ -130,9 +131,18 @@ export function TutorView() {
               type="button"
               disabled={busy}
               onClick={() => send(c.replace(/\$/g, ""))}
-              className="shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm transition-[border-color,color,transform] duration-150 hover:-translate-y-px hover:border-accent hover:text-accent disabled:opacity-50"
+              className="relative shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm transition-[border-color,color,transform] duration-150 hover:-translate-y-px hover:border-accent hover:text-accent disabled:opacity-50"
             >
-              <MathText text={c} inline />
+              {/[$\\]/.test(c) ? (
+                <>
+                  <span aria-hidden="true">
+                    <MathText text={c} inline />
+                  </span>
+                  <span className="sr-only">{mathSpeech(c)}</span>
+                </>
+              ) : (
+                <MathText text={c} inline />
+              )}
             </button>
           ))}
         </div>
@@ -144,6 +154,7 @@ export function TutorView() {
           }}
         >
           <input
+            aria-label="Your math question"
             className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted"
             value={input}
             onChange={(e) => setInput(e.target.value)}

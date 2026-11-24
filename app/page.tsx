@@ -10,7 +10,7 @@ function Tile({ href, title, body, className = "", children }: { href: string; t
       {children && <div className="min-h-0">{children}</div>}
       <div>
         <h3 className="text-lg font-semibold tracking-[-0.015em]">{title}</h3>
-        <p className="mt-1 max-w-[42ch] text-[15px] leading-relaxed text-muted">{body}</p>
+        <p className="mt-1 max-w-[42ch] text-base leading-relaxed text-muted">{body}</p>
       </div>
     </Link>
   );
@@ -45,7 +45,7 @@ export default function Home() {
           <Tile
             href="/practice-test"
             title="Practice tests from your homework"
-            body="Paste up to ten problems. Billy writes a graded test on the same skills."
+            body="Describe it or paste up to ten problems. Billy writes a graded test."
             className="md:col-span-3"
           >
             <div className="rounded-[12px] border border-line bg-bg p-4 text-[15px]">
@@ -62,13 +62,13 @@ export default function Home() {
               </div>
             </div>
           </Tile>
-          <Tile href="/tutor" title="Ask Billy" body="Billy answers with a question, so you find the next step yourself." className="md:col-span-3">
+          <Tile href="/tutor" title="Ask Billy" body="Ask any math question. Billy works every step, and argues when you are wrong." className="md:col-span-3">
             <div className="space-y-2 text-[15px]">
               <p className="ml-auto w-fit max-w-[85%] rounded-[12px] rounded-br-[4px] bg-surface-2 px-3.5 py-2">
-                Is it <MathInline latex="x = 5" />?
+                <MathInline latex="2x + 3 = 11" />, so <MathInline latex="x = 5" />.
               </p>
               <p className="w-fit max-w-[85%] rounded-[12px] rounded-bl-[4px] border border-line px-3.5 py-2">
-                Plug it in. What is <MathInline latex="2(5) + 3" />?
+                No. <MathInline latex="2(5) + 3 = 13" />, not <MathInline latex="11" />. It is <MathInline latex="x = 4" />.
               </p>
             </div>
           </Tile>

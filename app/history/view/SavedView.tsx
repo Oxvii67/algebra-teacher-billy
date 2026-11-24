@@ -13,9 +13,10 @@ export function SavedView() {
 
   return (
     <div className="space-y-4">
-      <Link href="/history" className="no-print inline-flex items-center gap-1.5 text-sm text-muted hover:text-text">
-        <ArrowLeft className="h-4 w-4" /> Back to History
+      <Link href="/binder" className="no-print inline-flex items-center gap-1.5 text-sm text-muted hover:text-text">
+        <ArrowLeft className="h-4 w-4" /> Back to Binder
       </Link>
+      <h1 className="page-title">{s?.title || "Saved solution"}</h1>
       {!ready ? (
         <p className="text-sm text-muted">Loading.</p>
       ) : !s ? (

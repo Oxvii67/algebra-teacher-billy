@@ -109,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <header className="no-print sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6 md:px-8">
-          <Link href="/" className="mr-3 shrink-0 rounded-lg" aria-label="Algebra Teacher Billy home">
+          <Link href="/" className="mr-3 shrink-0 rounded-lg" aria-label="Billy Algebra Teacher home">
             <Wordmark />
           </Link>
 

@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Delete } from "lucide-react";
-import { MathBlock, MathInline } from "@/components/math/Math";
+import { MathBlock, MathLabel } from "@/components/math/Math";
+import { mathSpeech } from "@/lib/mathSpeech";
 
 interface Key {
   /** LaTeX shown on the key. */
@@ -168,12 +169,11 @@ export function EquationInput({
               key={k.title}
               type="button"
               title={k.title}
-              aria-label={k.title}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => insert(k.ins)}
-              className="flex h-11 items-center justify-center overflow-hidden rounded-md border border-line bg-surface text-sm hover:border-accent hover:bg-surface-2"
+              className="flex h-11 items-center justify-center relative overflow-hidden rounded-md border border-line bg-surface text-sm hover:border-accent hover:bg-surface-2"
             >
-              <MathInline latex={k.show} />
+              <MathLabel latex={k.show} say={k.title} />
             </button>
           ))}
           <button
@@ -193,7 +193,7 @@ export function EquationInput({
         <span className="text-muted">Try:</span>
         {EXAMPLES.map((ex) => (
           <button key={ex} type="button" onClick={() => onChange(ex)} className="rounded-md border border-line px-2 py-1 hover:bg-surface-2">
-            <MathInline latex={ex} />
+            <MathLabel latex={ex} say={`Use ${mathSpeech(ex)}`} />
           </button>
         ))}
       </div>

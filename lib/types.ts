@@ -68,6 +68,26 @@ export interface SavedSolution {
 
 export type TestLevel = "same" | "hard" | "ap";
 
+export interface TestCurve {
+  /** mathjs expression in x, or x = c for a vertical line. */
+  expression: string;
+  /** LaTeX name shown when there is more than one curve, such as f(x). */
+  label: string;
+  /** Piece of the domain that is drawn; null is unbounded. */
+  from: number | null;
+  to: number | null;
+}
+
+/** A figure the student reads to answer a question. */
+export interface TestGraph {
+  curves: TestCurve[];
+  points: { x: number; y: number; open: boolean }[];
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
 export interface TestQuestion {
   id: string;
   promptLatex: string;
@@ -81,6 +101,9 @@ export interface TestQuestion {
   points: number;
   solution: SolutionStep[];
   skill: string;
+  graph?: TestGraph;
+  /** When the answer choices are graphs, one per choice. */
+  choiceGraphs?: TestGraph[];
   /** Billy's second look at a typed answer. Applies only while the response is unchanged. */
   review?: AnswerReview;
 }

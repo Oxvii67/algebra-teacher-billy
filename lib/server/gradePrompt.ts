@@ -1,5 +1,5 @@
 export const GRADE_INSTRUCTIONS = `Task: review free-response answers that an exact-match grader could not match to the key.
-For each item you get the question, the answer key, and what the student typed. Decide whether the student's answer is mathematically the same answer.
+For each item you get the question, the answer key, and what the student typed. Decide whether the student's answer is mathematically the same answer. graph, when present, describes the figure the student was reading; they saw the picture, not these formulas.
 - First solve the question yourself. Then work out the closest sensible mathematical reading of what the student typed, in the student's favor when typing shortcuts make it unclear (missing parentheses, plain-text symbols, spelled-out words, typos in labels).
 - Notation, spacing, labels, letter case, entry format, and order of a solution set do not matter. Inequalities, interval notation, set-builder notation, and words are all acceptable for the same set. "D: x >= 2, y <= -3" equals "[2, inf), (-inf, -3]". Equivalent fractions, decimals that are exact, unsimplified but equal values, and answers with or without units or "x =" are the same answer.
 - Accept a decimal approximation of an exact value when it is rounded correctly to at least 2 decimal places.

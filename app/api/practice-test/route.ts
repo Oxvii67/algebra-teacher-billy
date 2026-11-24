@@ -3,13 +3,15 @@ import { guard } from "@/lib/server/guard";
 import { TEACHER_PERSONA, TEST_INSTRUCTIONS } from "@/lib/server/prompts";
 import { answersOtherSubject, isOtherSubject } from "@/lib/server/scope";
 import { TEST_SCHEMA } from "@/lib/server/schemas";
+import { choiceQuestion, figureQuestion, wantsFigure } from "@/lib/server/figures";
+import { mentionsFigure } from "@/lib/testGraph";
 import { MAX_QUESTIONS, requestedCount } from "@/lib/testRequest";
 import type { TestLevel, TestQuestion } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-type RawQuestion = Omit<TestQuestion, "id">;
+type RawQuestion = Omit<TestQuestion, "id" | "graph" | "choiceGraphs"> & { graph?: unknown; choiceGraphs?: unknown };
 interface RawTest {
   title: string;
   questions: RawQuestion[];
@@ -60,7 +62,7 @@ function plan(sources: Source[], request: string): Group[] {
   });
 }
 
-function batchParts(level: TestLevel, group: Group, request: string, index: number, shared: boolean): Part[] {
+function batchParts(level: TestLevel, group: Group, request: string, graphs: boolean, index: number, shared: boolean): Part[] {
   const batch = group.sources;
   const parts: Part[] = [
     {
@@ -68,6 +70,11 @@ function batchParts(level: TestLevel, group: Group, request: string, index: numb
     },
   ];
   if (request) parts.push({ text: `Student's request for this test (what to cover and how; it is not a question to answer):\n"""\n${request}\n"""` });
+  parts.push({
+    text: graphs
+      ? "Figures: on. Where the topics can be graphed, make about 40% of your questions (at least one) figure questions, and use choiceGraphs for at most one of them. Where they cannot be graphed, draw none."
+      : "Figures: off. Every question has graph task 'none' and an empty choiceGraphs, and none refers to a figure.",
+  });
   if (shared) {
     parts.push({ text: `Two writers share this test and you are writer ${index + 1}. ${index === 0 ? "Write the core skills." : "Write the remaining topics and other variations, with different numbers and functions from a typical first set."}` });
   }
@@ -82,8 +89,24 @@ function batchParts(level: TestLevel, group: Group, request: string, index: numb
   return parts;
 }
 
+/** The question with its figure and key worked out, or null if it depends on a figure that cannot be used. */
+function withFigure(q: RawQuestion): Omit<TestQuestion, "id"> | null {
+  const { graph, choiceGraphs, ...rest } = q;
+  const choice = Array.isArray(choiceGraphs) && choiceGraphs.length > 0;
+  if (choice || wantsFigure(graph)) {
+    const written = choice ? choiceQuestion(choiceGraphs, graph, q.answer) : figureQuestion(graph);
+    return written && { ...rest, ...written };
+  }
+  return mentionsFigure(q.instructions ?? "") ? null : rest;
+}
+
 function normalize(questions: RawQuestion[]): TestQuestion[] {
-  return questions.slice(0, 12).map((q, i) => {
+  const usable = questions.flatMap((q) => {
+    const checked = withFigure(q);
+    if (!checked) console.warn(`[practice-test] dropped a question with an unusable figure: ${JSON.stringify([q.instructions, q.graph, q.choiceGraphs]).slice(0, 800)}`);
+    return checked ?? [];
+  });
+  return usable.slice(0, 12).map((q, i) => {
     const mc = q.type === "multiple_choice" && (q.choices ?? []).length >= 2;
     const idx = Number.parseInt(q.answer, 10);
     return {
@@ -109,9 +132,11 @@ export async function POST(req: Request) {
   let level: TestLevel;
   let sources: Source[];
   let request: string;
+  let figures: boolean;
   try {
     apiKey = requireKey(process.env.GEMINI_API_KEY);
-    const body = (await req.json()) as { images?: string[]; text?: string; request?: string; level?: TestLevel };
+    const body = (await req.json()) as { images?: string[]; text?: string; request?: string; level?: TestLevel; graphs?: boolean };
+    figures = body.graphs !== false;
     level = LEVELS.includes(body.level as TestLevel) ? (body.level as TestLevel) : "same";
     const images = (body.images ?? []).filter((x) => typeof x === "string").slice(0, 10);
     const text = String(body.text ?? "").slice(0, 6000).trim();
@@ -146,7 +171,7 @@ export async function POST(req: Request) {
         const write = async (g: Group, i: number, budgetMs?: number) => {
             const out = await generateJson<RawTest>(apiKey, {
               system: `${TEACHER_PERSONA}\n\n${TEST_INSTRUCTIONS}`,
-              contents: batchParts(level, g, request, i, shared),
+              contents: batchParts(level, g, request, figures, i, shared),
               schema: TEST_SCHEMA,
               temperature: 0.5,
               thinkingBudget: 2048,

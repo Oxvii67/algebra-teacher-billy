@@ -4,11 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
+import { TestGraph } from "@/components/math/TestGraph";
 import { StepList } from "@/components/solve/StepList";
 import { compressAll } from "@/lib/image-compress";
 import { useData } from "@/lib/data/DataProvider";
 import { uid } from "@/lib/data/local";
 import { answersMatch, previewLatex } from "@/lib/grade";
+import { describeGraph } from "@/lib/testGraph";
 import { DictateButton } from "@/components/studio/DictateButton";
 import type { AnswerReview, PracticeTest, TestLevel } from "@/lib/types";
 
@@ -30,6 +32,7 @@ export function PracticeTestView() {
   const [shortNote, setShortNote] = useState<string | null>(null);
   const [voiceProblem, setVoiceProblem] = useState<string | null>(null);
   const [level, setLevel] = useState<TestLevel>("same");
+  const [graphs, setGraphs] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ stage: Stage; done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +90,7 @@ export function PracticeTestView() {
       const res = await fetch("/api/practice-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images, text, request, level }),
+        body: JSON.stringify({ images, text, request, level, graphs }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -138,7 +141,7 @@ export function PracticeTestView() {
         created_at: new Date().toISOString(),
       };
       const got = data.questions.length;
-      setShortNote(data.asked && got < data.asked ? `Billy finished ${got} of the ${data.asked} questions before the AI ran out of room. The test below is complete as it stands; make a new one later for the rest.` : null);
+      setShortNote(data.asked && got < data.asked ? `Billy finished ${got} of the ${data.asked} questions you asked for. The test below is complete as it stands; make a new one later for the rest.` : null);
       setTest(t);
       await saveTest(t);
       router.replace(`/practice-test?id=${t.id}`);
@@ -298,6 +301,14 @@ export function PracticeTestView() {
           <p className="mt-2 text-[13px] text-muted">{LEVELS.find((l) => l.id === level)?.desc}</p>
         </div>
 
+        <label className="flex w-fit cursor-pointer items-start gap-3">
+          <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--accent)]" checked={graphs} onChange={(e) => setGraphs(e.target.checked)} />
+          <span>
+            <span className="text-sm font-medium">Include graphs</span>
+            <span className="block text-[13px] text-muted">Some questions ask you to read a graph or pick the right one, when the topic can be graphed.</span>
+          </span>
+        </label>
+
         {error && (
           <p className="callout text-sm" style={{ ["--rule" as string]: "var(--warning)" }}>
             {error}
@@ -383,6 +394,7 @@ async function withReviews(t: PracticeTest): Promise<PracticeTest> {
     answer: q.answer,
     answerLatex: q.answerLatex,
     response: t.responses[q.id],
+    graph: q.graph ? describeGraph(q.graph) : undefined,
   }));
   if (!items.length) return t;
   const res = await fetch("/api/grade", {
@@ -557,6 +569,7 @@ function TestRunner({
                   </div>
                   <MathText text={q.instructions} className="mt-1 text-sm" />
                   <MathBlock latex={q.promptLatex} className="my-2" />
+                  {q.graph && <TestGraph graph={q.graph} name={`Graph for question ${n + 1}`} />}
 
                   {q.type === "multiple_choice" ? (
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -566,13 +579,13 @@ function TestRunner({
                         return (
                           <label
                             key={i}
-                            className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-sm ${
+                            className={`flex cursor-pointer gap-2 rounded-lg border p-2.5 text-sm ${q.choiceGraphs ? "items-start" : "items-center"} ${
                               graded && isKey ? "border-success bg-success/10" : graded && chosen ? "border-danger bg-danger/10" : chosen ? "border-accent bg-surface-2" : "border-line hover:bg-surface-2"
                             } ${printKey && isKey ? "print:font-bold print:underline" : ""}`}
                           >
                             <input type="radio" name={q.id} className="accent-[var(--accent)] print:hidden" checked={chosen} onChange={() => respond(q.id, String(i))} disabled={graded || grading} />
                             <span className="font-semibold">{String.fromCharCode(65 + i)}.</span>
-                            <MathInline latex={c} />
+                            {q.choiceGraphs?.[i] ? <TestGraph graph={q.choiceGraphs[i]} name={`Graph ${c}`} small /> : <MathInline latex={c} />}
                           </label>
                         );
                       })}

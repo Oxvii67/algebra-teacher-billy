@@ -13,6 +13,7 @@ interface Item {
   answer: string;
   answerLatex: string;
   response: string;
+  graph: string;
 }
 
 interface Review {
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
         answer: clip(x?.answer, 500),
         answerLatex: clip(x?.answerLatex, 500),
         response: clip(x?.response, 500).trim(),
+        graph: clip(x?.graph, 1200),
       }))
       .filter((x) => x.id && x.response);
     if (!items.length) return Response.json({ error: "There are no answers to review." }, { status: 400 });

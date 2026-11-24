@@ -1,3 +1,5 @@
+import { FIGURE_TASKS } from "./figures";
+
 const str = { type: "string" } as const;
 const strArr = { type: "array", items: str } as const;
 
@@ -112,6 +114,33 @@ export const DRILL_SCHEMA = {
   required: ["topic", "problemLatex", "steps", "mistakeIndex", "trap", "explanation", "correctedLatex", "correctAnswerLatex"],
 } as const;
 
+const num = { type: "number" } as const;
+
+const bool = { type: "boolean" } as const;
+
+/** A question with no figure sends task "none" and no curves. */
+const GRAPH_SCHEMA = {
+  type: "object",
+  properties: {
+    task: { type: "string", enum: FIGURE_TASKS },
+    at: str,
+    to: str,
+    curves: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { expression: str, label: str, from: str, fromClosed: bool, to: str, toClosed: bool, hole: str },
+        required: ["expression", "label", "from", "fromClosed", "to", "toClosed", "hole"],
+      },
+    },
+    xMin: num,
+    xMax: num,
+    yMin: num,
+    yMax: num,
+  },
+  required: ["task", "at", "to", "curves", "xMin", "xMax", "yMin", "yMax"],
+} as const;
+
 export const TEST_SCHEMA = {
   type: "object",
   properties: {
@@ -130,8 +159,10 @@ export const TEST_SCHEMA = {
           points: { type: "integer" },
           solution: { type: "array", items: STEP_SCHEMA },
           skill: str,
+          graph: GRAPH_SCHEMA,
+          choiceGraphs: strArr,
         },
-        required: ["promptLatex", "instructions", "type", "choices", "answer", "answerLatex", "points", "solution", "skill"],
+        required: ["promptLatex", "instructions", "graph", "type", "choices", "choiceGraphs", "answer", "answerLatex", "points", "solution", "skill"],
       },
     },
   },

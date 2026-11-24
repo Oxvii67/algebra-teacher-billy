@@ -22,6 +22,10 @@ export default function PrivacyPage() {
           sign in with Google, we receive your name, email address and profile picture from Google. Passwords are handled by Supabase, our sign-in
           provider, and are never visible to us.
         </p>
+        <p>
+          <strong>Unfinished work</strong>, such as your chats with Billy, the problem on the Solve page and your place in a lesson video, is kept in your
+          browser on this device, with or without an account. It is not sent to our database. You can delete any chat from the Ask Billy page.
+        </p>
       </section>
 
       <section className="space-y-3">

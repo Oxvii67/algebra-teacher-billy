@@ -1,12 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ArrowUp, RotateCcw } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowUp, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { MathBlock, MathText } from "@/components/math/Math";
 import { WorksheetText } from "@/components/math/WorksheetText";
 import { useData } from "@/lib/data/DataProvider";
+import { uid } from "@/lib/data/local";
 import { mathSpeech } from "@/lib/mathSpeech";
+import { currentOwner, useStore } from "@/lib/session/store";
+import { type Thread, tidy, tutorLive, tutorSession } from "@/lib/session/tutor";
+import { useReadyText } from "@/lib/session/useReadyText";
 import type { ChatMessage, TutorReply } from "@/lib/types";
 
 const STARTERS = [
@@ -20,74 +24,128 @@ const STARTERS = [
 
 const OPENING = "I'm Billy. Ask me any math question and I'll work it out, every step. Math only. Try anything else and I'll have something to say about it.";
 
+const PROBLEM_CHIPS = ["Walk me through the first step", "I think I know the first move", "What skill do I need here?"];
+
+/** What a past chat is called in the list: its first question. */
+function chatTitle(t: Thread): string {
+  const first = t.messages.find((m) => m.role === "user")?.content ?? "Chat";
+  const text = first.replace(/\s+/g, " ").trim();
+  return text.length > 48 ? `${text.slice(0, 45)}...` : text;
+}
+
+const setDraft = (draft: string) => tutorSession.set((s) => ({ ...s, draft }));
+const openChat = (id: string | null) => tutorSession.set((s) => tidy({ ...s, activeId: id }));
+
 export function TutorView() {
   const params = useSearchParams();
-  const problem = params.get("p") ?? "";
-  const { recordActivity } = useData();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [chips, setChips] = useState<string[]>(STARTERS);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const arrival = params.get("p") ?? "";
+  const { recordActivity, ready } = useData();
+  const session = useStore(tutorSession);
+  const live = useStore(tutorLive);
+  const thread = session.threads.find((t) => t.id === session.activeId) ?? null;
+  const problem = arrival || thread?.problem || "";
+  const messages = arrival && thread?.problem !== arrival ? [] : (thread?.messages ?? []);
+  const { busy, error } = (thread && live[thread.id]) || { busy: false, error: null };
+  const chips = thread?.chips.length ? thread.chips : problem ? PROBLEM_CHIPS : STARTERS;
+  const past = session.threads.filter((t) => t.messages.length);
+  /** Sent, but the answer never came: the page was closed mid-reply, or the request failed. */
+  const unanswered = !busy && messages[messages.length - 1]?.role === "user";
+  const [input, setInput] = useReadyText(ready, session.draft, setDraft);
   const endRef = useRef<HTMLDivElement>(null);
+  const scrolled = useRef(false);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, busy]);
+    if (!messages.length && !busy) return;
+    endRef.current?.scrollIntoView({ behavior: scrolled.current ? "smooth" : "instant", block: "end" });
+    scrolled.current = true;
+  }, [messages.length, busy, thread?.id]);
 
+  // Arriving with a problem reopens the chat about it, or starts one.
   useEffect(() => {
-    if (problem) setChips(["Walk me through the first step", "I think I know the first move", "What skill do I need here?"]);
-  }, [problem]);
+    if (!ready || !arrival) return;
+    tutorSession.set((s) => {
+      const found = s.threads.find((t) => t.problem === arrival);
+      if (found) return tidy({ ...s, activeId: found.id });
+      const fresh: Thread = { id: uid(), problem: arrival, messages: [], chips: [], updated: Date.now() };
+      return tidy({ ...s, threads: [fresh, ...s.threads], activeId: fresh.id });
+    });
+    window.history.replaceState(null, "", "/tutor");
+  }, [arrival, ready]);
 
-  const send = async (text: string) => {
-    const content = text.trim();
-    if (!content || busy) return;
-    const next: ChatMessage[] = [...messages, { role: "user", content }];
-    setMessages(next);
-    setInput("");
-    setBusy(true);
-    setError(null);
+  /** Runs to the end even if the student leaves the page; the reply is waiting when they return. */
+  const ask = async (id: string, history: ChatMessage[], about: string) => {
+    const owner = currentOwner();
+    const setLive = (v: { busy: boolean; error: string | null }) => tutorLive.set((l) => ({ ...l, [id]: v }));
+    const patch = (fn: (t: Thread) => Thread) =>
+      tutorSession.set((s) => tidy({ ...s, threads: s.threads.map((t) => (t.id === id ? { ...fn(t), updated: Date.now() } : t)) }), owner);
+    setLive({ busy: true, error: null });
     try {
       const res = await fetch("/api/tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, problemLatex: problem || undefined }),
+        body: JSON.stringify({ messages: history.slice(-24), problemLatex: about || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "The teacher did not respond.");
       const r = data as TutorReply;
-      setMessages([...next, { role: "assistant", content: r.reply }]);
-      setChips(r.chips.length ? r.chips : chips);
+      patch((t) => ({ ...t, messages: [...t.messages, { role: "assistant", content: r.reply }], chips: r.chips.length ? r.chips : t.chips }));
+      setLive({ busy: false, error: null });
       if (r.verdict === "correct") recordActivity({ xp: 5, skill: r.skill, correct: true });
       else if (r.verdict === "incorrect") recordActivity({ xp: 1, skill: r.skill, correct: false });
       else if (r.verdict === "partial") recordActivity({ xp: 2, skill: r.skill });
     } catch (e) {
-      setError((e as Error).message);
-      setMessages(messages);
-      setInput(content);
-    } finally {
-      setBusy(false);
+      setLive({ busy: false, error: (e as Error).message });
     }
   };
 
-  const reset = () => {
-    setMessages([]);
-    setChips(STARTERS);
-    setError(null);
+  const send = (text: string) => {
+    const content = text.trim();
+    if (!content || busy || !ready) return;
+    const id = thread?.id ?? uid();
+    const next: ChatMessage[] = [...messages, { role: "user", content }];
+    tutorSession.set((s) => {
+      const base: Thread = s.threads.find((t) => t.id === id) ?? { id, problem, messages: [], chips: [], updated: 0 };
+      return tidy({ ...s, activeId: id, draft: "", threads: [{ ...base, messages: next, updated: Date.now() }, ...s.threads.filter((t) => t.id !== id)] });
+    });
+    void ask(id, next, problem);
+  };
+
+  const remove = () => {
+    if (!thread || !window.confirm("Delete this chat? It cannot be brought back.")) return;
+    tutorSession.set((s) => ({ ...s, threads: s.threads.filter((t) => t.id !== thread.id), activeId: null }));
   };
 
   return (
     <div className="flex h-[calc(100dvh-11rem)] flex-col gap-4 lg:h-[calc(100dvh-10.5rem)]">
-      <header className="flex items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Tutoring session</p>
           <h1 className="page-title mt-1">Ask Billy</h1>
           <p className="mt-1 text-sm text-muted">Ask any math question. Argue with a right answer and he will show you exactly where you are wrong.</p>
         </div>
-        {messages.length > 0 && (
-          <button className="btn-ghost btn-sm" onClick={reset}>
-            <RotateCcw className="h-3.5 w-3.5" /> New session
-          </button>
+        {past.length > 0 && (
+          <div className="flex items-center gap-2">
+            {past.some((t) => t.id !== thread?.id) && (
+              <select className="input h-9 w-44 py-1 text-xs" aria-label="Past chats" value={messages.length ? thread!.id : ""} onChange={(e) => openChat(e.target.value || null)}>
+                {!messages.length && <option value="">Past chats</option>}
+                {past.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {chatTitle(t)}
+                  </option>
+                ))}
+              </select>
+            )}
+            {messages.length > 0 && (
+              <>
+                <button type="button" className="btn-ghost btn-sm" aria-label="Delete this chat" onClick={remove} disabled={busy}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+                <button type="button" className="btn-ghost btn-sm" onClick={() => openChat(null)}>
+                  <Plus className="h-3.5 w-3.5" /> New chat
+                </button>
+              </>
+            )}
+          </div>
         )}
       </header>
 
@@ -114,10 +172,13 @@ export function TutorView() {
               Billy is writing
             </div>
           )}
-          {error && (
-            <p className="callout text-sm" style={{ ["--rule" as string]: "var(--warning)" }}>
-              {error}
-            </p>
+          {unanswered && (
+            <div className="callout flex flex-wrap items-center justify-between gap-3 text-sm" role="status" style={{ ["--rule" as string]: "var(--warning)" }}>
+              <span className="min-w-0 flex-1">{error ?? "Billy did not get to answer this one."}</span>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => thread && void ask(thread.id, messages, problem)}>
+                <RotateCcw className="h-3.5 w-3.5" /> Ask again
+              </button>
+            </div>
           )}
           <div ref={endRef} />
         </div>
@@ -162,7 +223,7 @@ export function TutorView() {
             disabled={busy}
             maxLength={2000}
           />
-          <button type="submit" className="btn-primary h-9 w-9 rounded-full p-0" disabled={busy || !input.trim()} aria-label="Send">
+          <button type="submit" className="btn-primary h-9 w-9 rounded-full p-0" disabled={busy || !ready || !input.trim()} aria-label="Send">
             <ArrowUp className="h-4 w-4" />
           </button>
         </form>

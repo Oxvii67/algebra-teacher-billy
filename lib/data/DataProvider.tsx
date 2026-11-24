@@ -12,6 +12,7 @@ import {
   type SavedSolution,
   type SolveResult,
 } from "@/lib/types";
+import { setSessionOwner } from "@/lib/session/store";
 import { localStore, uid } from "./local";
 
 interface DataCtx {
@@ -113,6 +114,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const handleUser = useCallback(
     async (u: User | null) => {
       const sb = sbRef.current;
+      setSessionOwner(u?.id ?? null);
       setUser(u);
       if (!u || !sb) {
         loadGuest();
@@ -141,6 +143,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const sb = getSupabaseBrowser();
     sbRef.current = sb;
     if (!sb) {
+      setSessionOwner(null);
       loadGuest();
       setReady(true);
       return;

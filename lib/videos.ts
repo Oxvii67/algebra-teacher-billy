@@ -47,8 +47,10 @@ export function videosForSlug(slug: string): VideoMatch[] {
   return t ? t.videos.map((v) => ({ ...v, topic: t.name, topicSlug: t.slug })) : [];
 }
 
+export const EMBED_ORIGIN = "https://www.youtube-nocookie.com";
+
 export function embedUrl(id: string): string {
-  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1`;
+  return `${EMBED_ORIGIN}/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1`;
 }
 
 export function isVideoId(id: string): boolean {

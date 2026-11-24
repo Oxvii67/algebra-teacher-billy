@@ -3,41 +3,57 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
-import { StudioInput, type StudioTab } from "@/components/studio/StudioInput";
+import { StudioInput } from "@/components/studio/StudioInput";
 import { SolutionView } from "@/components/solve/SolutionView";
 import { useData } from "@/lib/data/DataProvider";
-import type { SavedSolution, SolveInput, SolveResult } from "@/lib/types";
+import { currentOwner, useStore } from "@/lib/session/store";
+import { studioLive, studioSession, type StudioTab } from "@/lib/session/studio";
+import type { SolveInput, SolveResult } from "@/lib/types";
 import { exampleBySlug } from "@/lib/examples";
 import { compressImage } from "@/lib/image-compress";
 
 const STAGES = ["Reading the problem", "Working every step", "Plugging the answer back in", "Matching prerequisite lessons"];
+const STAGE_MS = 3500;
+/** The newest solve wins the page; an older one still lands in the Binder. */
+let latestRun = 0;
 
 export function StudioView() {
-  const { saveSolution, moveSolution, folders, recordActivity } = useData();
-  const [busy, setBusy] = useState(false);
+  const { saveSolution, moveSolution, folders, solutions, recordActivity, ready } = useData();
+  const session = useStore(studioSession);
+  const { busy, startedAt, error } = useStore(studioLive);
   const [stage, setStage] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const params = useSearchParams();
   const example = exampleBySlug(params.get("example"));
   // A problem typed on the home page arrives as ?q= and starts solving at once.
   const q = params.get("q")?.trim().slice(0, 4000) ?? "";
   const modeParam = params.get("mode");
-  const initialTab: StudioTab = q ? "type" : modeParam === "draw" || modeParam === "type" ? modeParam : "image";
-  const startedQ = useRef(false);
-  const [result, setResult] = useState<SolveResult | null>(example?.result ?? null);
-  const [saved, setSaved] = useState<SavedSolution | null>(null);
+  const [arrivalQ] = useState(q);
+  const started = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
+  /** Until saved work is known, an arrival with a new problem never flashes the old solution. */
+  const arriving = !!q || !!modeParam;
+  const result = example?.result ?? (arriving ? null : session.result);
+  const saved = !example && session.savedId ? (solutions.find((s) => s.id === session.savedId) ?? null) : null;
+  const tab: StudioTab = arrivalQ && !ready ? "type" : session.tab;
 
   useEffect(() => {
     if (!busy) return;
-    setStage(0);
-    const t = setInterval(() => setStage((s) => Math.min(STAGES.length - 1, s + 1)), 3500);
+    const tick = () => setStage(Math.min(STAGES.length - 1, Math.floor((Date.now() - startedAt) / STAGE_MS)));
+    tick();
+    const t = setInterval(tick, 500);
     return () => clearInterval(t);
-  }, [busy]);
+  }, [busy, startedAt]);
 
+  /** Runs to the end even if the student leaves the page; the solution is waiting when they return. */
   const solve = async (input: SolveInput) => {
-    setBusy(true);
-    setError(null);
+    const run = ++latestRun;
+    const owner = currentOwner();
+    studioLive.set(() => ({ busy: true, startedAt: Date.now(), error: null }));
+    if (example) {
+      studioSession.set((s) => ({ ...s, result: example.result, savedId: null, challenge: null }));
+      window.history.replaceState(null, "", "/studio");
+    }
+    let failed: string | null = null;
     try {
       const res = await fetch("/api/solve", {
         method: "POST",
@@ -47,43 +63,61 @@ export function StudioView() {
       const data = await res.json().catch(() => ({ error: "The server returned an unreadable response." }));
       if (!res.ok) throw new Error(data.error ?? "Solve failed.");
       const r = data as SolveResult;
-      setResult(r);
-      setSaved(await saveSolution(r));
+      if (run === latestRun) studioSession.set((s) => ({ ...s, result: r, savedId: null, challenge: null }), owner);
+      const row = await saveSolution(r);
+      studioSession.set((s) => (s.result === r ? { ...s, savedId: row.id } : s), owner);
       recordActivity({ xp: 15, skill: r.topic });
-      requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      if (run === latestRun) requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (e) {
-      setError((e as Error).message);
+      failed = (e as Error).message;
     } finally {
-      setBusy(false);
+      if (run === latestRun) studioLive.set((s) => ({ ...s, busy: false, error: failed }));
     }
   };
 
+  const startNew = () => {
+    studioSession.set((s) => ({ ...s, result: null, savedId: null, challenge: null }));
+    studioLive.set((s) => ({ ...s, error: null }));
+    if (example) window.history.replaceState(null, "", "/studio");
+  };
+
+  // Wait for sign-in state, so the solution is saved to the right place.
   useEffect(() => {
-    if (!q || startedQ.current || example) return;
-    startedQ.current = true;
-    // Drop ?q= so a refresh or the back button does not solve (and spend quota on) it again.
+    if (!ready || started.current || example || !arriving) return;
+    started.current = true;
+    startNew();
+    const t: StudioTab | null = q ? "type" : modeParam === "draw" || modeParam === "type" || modeParam === "image" ? modeParam : null;
+    if (t) studioSession.set((s) => ({ ...s, tab: t }));
+    // Drop the parameters so a refresh or the back button does not solve (and spend quota on) it again.
     window.history.replaceState(null, "", "/studio");
-    void solve({ kind: "text", latex: q });
-    // solve is stable for this purpose; run once per arrival
+    if (q) void solve({ kind: "text", latex: q });
+    // run once per arrival
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, example]);
+  }, [ready, q, modeParam, example]);
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Solve a problem</h1>
-          <p className="mt-2 text-muted">{example && result === example.result ? "A worked example. Read the reason beside each line." : "One problem at a time. Add a screenshot, draw it, or use the keypad."}</p>
+          <p className="mt-2 text-muted">{example ? "A worked example. Read the reason beside each line." : "One problem at a time. Add a screenshot, draw it, or use the keypad."}</p>
         </div>
         {result && (
-          <button type="button" className="btn-ghost" onClick={() => setResult(null)}>
+          <button type="button" className="btn-ghost" onClick={startNew}>
             <RotateCcw className="h-4 w-4" /> New problem
           </button>
         )}
       </header>
 
       <div hidden={!!result}>
-        <StudioInput onSubmit={solve} busy={busy} initialTab={initialTab} initialLatex={q} />
+        <StudioInput
+          onSubmit={solve}
+          busy={busy || !ready}
+          tab={tab}
+          onTab={(t) => studioSession.set((s) => ({ ...s, tab: t }))}
+          owner={ready ? currentOwner() : null}
+          initialLatex={arrivalQ}
+        />
       </div>
 
       {busy && (
@@ -101,6 +135,10 @@ export function StudioView() {
       {result && (
         <SolutionView
           result={result}
+          // Remounts for a new problem, so its tabs and hints start closed.
+          key={result.problemLatex}
+          savedChallenge={session.challenge}
+          onChallenge={example ? undefined : (c) => studioSession.set((s) => (s.result === result ? { ...s, challenge: c } : s))}
           onSolveChallenge={(latex) => solve({ kind: "text", latex })}
           toolbar={
             saved && (
@@ -109,8 +147,7 @@ export function StudioView() {
                 value={saved.folder_id ?? ""}
                 onChange={(e) => {
                   const fid = e.target.value || null;
-                  moveSolution(saved.id, fid);
-                  setSaved({ ...saved, folder_id: fid });
+                  void moveSolution(saved.id, fid);
                 }}
                 aria-label="Save to folder"
               >

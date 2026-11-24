@@ -90,14 +90,20 @@ export function SolutionView({
   result,
   onSolveChallenge,
   toolbar,
+  savedChallenge,
+  onChallenge,
 }: {
   result: SolveResult;
   /** Called when the student wants the challenge problem solved in full. */
   onSolveChallenge?: (latex: string) => void;
   toolbar?: React.ReactNode;
+  /** A harder version kept by the page; without onChallenge it lasts only while this is open. */
+  savedChallenge?: ChallengeResult | null;
+  onChallenge?: (c: ChallengeResult) => void;
 }) {
   const [tab, setTab] = useState<"teacher" | "simpler">("teacher");
-  const [challenge, setChallenge] = useState<ChallengeResult | null>(null);
+  const [localChallenge, setLocalChallenge] = useState<ChallengeResult | null>(null);
+  const challenge = onChallenge ? (savedChallenge ?? null) : localChallenge;
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeErr, setChallengeErr] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
@@ -118,7 +124,7 @@ export function SolutionView({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed.");
-      setChallenge(data as ChallengeResult);
+      (onChallenge ?? setLocalChallenge)(data as ChallengeResult);
     } catch (e) {
       setChallengeErr((e as Error).message);
     } finally {

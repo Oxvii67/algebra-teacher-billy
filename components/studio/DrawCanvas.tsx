@@ -3,13 +3,7 @@
 import { getStroke } from "perfect-freehand";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Grid3x3, PenTool, Redo2, Trash2, Undo2 } from "lucide-react";
-
-interface Stroke {
-  points: [number, number, number][];
-  color: string;
-  size: number;
-  erase: boolean;
-}
+import type { Stroke } from "@/lib/session/drafts";
 
 const W = 1400;
 const H = 800;
@@ -45,9 +39,17 @@ function drawStroke(ctx: CanvasRenderingContext2D, s: Stroke) {
   ctx.globalCompositeOperation = "source-over";
 }
 
-export function DrawCanvas({ onChange }: { onChange: (dataUrl: string | null) => void }) {
+export function DrawCanvas({
+  strokes,
+  setStrokes,
+  onChange,
+}: {
+  strokes: Stroke[];
+  setStrokes: (s: Stroke[]) => void;
+  /** The drawing as an image, or null while it is blank. */
+  onChange: (dataUrl: string | null) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redo, setRedo] = useState<Stroke[]>([]);
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
@@ -74,8 +76,6 @@ export function DrawCanvas({ onChange }: { onChange: (dataUrl: string | null) =>
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     c.width = W * dpr;
     c.height = H * dpr;
-    render(strokes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const exportImage = useCallback((list: Stroke[]) => {
@@ -91,11 +91,13 @@ export function DrawCanvas({ onChange }: { onChange: (dataUrl: string | null) =>
     onChange(out.toDataURL("image/png"));
   }, [onChange]);
 
-  const commit = (list: Stroke[]) => {
-    setStrokes(list);
-    render(list);
-    exportImage(list);
-  };
+  // Also runs when a saved drawing loads.
+  useEffect(() => {
+    render(strokes);
+    exportImage(strokes);
+  }, [strokes, render, exportImage]);
+
+  const commit = setStrokes;
 
   const toPoint = (e: React.PointerEvent): [number, number, number] => {
     const r = canvasRef.current!.getBoundingClientRect();

@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Image as ImageIcon, Keyboard, LoaderCircle, PenTool } from "lucide-react";
+import { loadDraft, saveDraft, type Stroke, type StudioDraft } from "@/lib/session/drafts";
+import type { StudioTab } from "@/lib/session/studio";
 import type { SolveInput } from "@/lib/types";
 import { DrawCanvas } from "./DrawCanvas";
 import { EquationInput } from "./EquationInput";
 import { ImageInput } from "./ImageInput";
 
-export type StudioTab = "image" | "draw" | "type";
 type Tab = StudioTab;
 
 const TABS: { id: Tab; label: string; icon: typeof ImageIcon }[] = [
@@ -20,20 +21,79 @@ export function StudioInput({
   onSubmit,
   busy,
   submitLabel = "Solve it",
-  initialTab = "image",
+  tab,
+  onTab,
+  owner,
   initialLatex = "",
 }: {
   onSubmit: (input: SolveInput) => void;
   busy?: boolean;
   submitLabel?: string;
-  initialTab?: Tab;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  /** Whose draft to load and keep; null until sign-in state is known. */
+  owner: string | null;
   initialLatex?: string;
 }) {
-  const [tab, setTab] = useState<Tab>(initialTab);
   const [image, setImage] = useState<string | null>(null);
   const [drawing, setDrawing] = useState<string | null>(null);
   const [latex, setLatex] = useState(initialLatex);
   const [note, setNote] = useState("");
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+
+  // Bring back the unfinished problem. A field the student already filled in is left alone.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!owner || owner === loadedFor) return;
+    let cancelled = false;
+    if (loadedFor) {
+      // Someone else signed in or out: their draft, not the last person's.
+      setImage(null);
+      setStrokes([]);
+      setLatex("");
+      setNote("");
+      setLoadedFor(null);
+      return;
+    }
+    void loadDraft(owner).then((d) => {
+      if (cancelled) return;
+      if (d) {
+        setImage((v) => v ?? d.image);
+        setStrokes((v) => (v.length ? v : d.strokes));
+        if (!initialLatex) {
+          setLatex((v) => v || d.latex);
+          setNote((v) => v || d.note);
+        }
+      }
+      setLoadedFor(owner);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, loadedFor, initialLatex]);
+
+  const unsaved = useRef<{ owner: string; draft: StudioDraft } | null>(null);
+  const flush = useCallback(() => {
+    if (!unsaved.current) return;
+    void saveDraft(unsaved.current.owner, unsaved.current.draft);
+    unsaved.current = null;
+  }, []);
+  useEffect(() => {
+    if (!loadedFor || loadedFor !== owner) return;
+    unsaved.current = { owner: loadedFor, draft: { image, strokes, latex, note } };
+    const t = setTimeout(flush, 300);
+    return () => clearTimeout(t);
+  }, [image, strokes, latex, note, loadedFor, owner, flush]);
+  useEffect(() => {
+    const onHide = () => document.visibilityState === "hidden" && flush();
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
+      flush();
+    };
+  }, [flush]);
 
   const onDrawChange = useCallback((v: string | null) => setDrawing(v), []);
 
@@ -63,7 +123,7 @@ export function StudioInput({
               role="tab"
               aria-selected={tab === t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => onTab(t.id)}
               className={`tab flex-1 justify-center whitespace-nowrap sm:flex-none ${tab === t.id ? "tab-active" : ""}`}
             >
               <Icon className="h-4 w-4" /> {t.label}
@@ -76,7 +136,7 @@ export function StudioInput({
         <ImageInput value={image} onChange={setImage} active={tab === "image"} />
       </div>
       <div hidden={tab !== "draw"}>
-        <DrawCanvas onChange={onDrawChange} />
+        <DrawCanvas strokes={strokes} setStrokes={setStrokes} onChange={onDrawChange} />
       </div>
       <div hidden={tab !== "type"}>
         <EquationInput value={latex} onChange={setLatex} onSubmit={submit} />

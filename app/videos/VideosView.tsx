@@ -5,58 +5,73 @@ import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Play, Search } from "lucide-react";
 import { MathText } from "@/components/math/Math";
 import { VideoEmbed } from "@/components/video/VideoEmbed";
-import { type Course, COURSES, VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
+import { useData } from "@/lib/data/DataProvider";
+import { currentOwner, useStore } from "@/lib/session/store";
+import { useReadyText } from "@/lib/session/useReadyText";
+import { CHANNELS, rememberPosition, type VideosSession, videosLive, videosSession } from "@/lib/session/videos";
+import { COURSES, VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
 
-const CHANNELS = ["All", "Khan Academy", "The Organic Chemistry Tutor", "3Blue1Brown"] as const;
+const patch = (p: Partial<VideosSession>) => videosSession.set((s) => ({ ...s, ...p }));
+/** Only the newest search fills the page. */
+let latestSearch = 0;
 
 /** Topics shown before "Show all": enough to scan in one look. */
 const TOPIC_PREVIEW = 16;
 
 export function VideosView() {
   const params = useSearchParams();
-  const [query, setQuery] = useState(params.get("q") ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [advice, setAdvice] = useState("");
-  const [results, setResults] = useState<VideoMatch[] | null>(null);
-  const [youtube, setYoutube] = useState<VideoMatch[]>([]);
-  const [playing, setPlaying] = useState<VideoMatch | null>(null);
-  const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("All");
-  const [topic, setTopic] = useState<string | null>(null);
-  const [course, setCourse] = useState<Course | "all">("all");
-  const [showAll, setShowAll] = useState(false);
+  const { ready } = useData();
+  const session = useStore(videosSession);
+  const { results, youtube, advice, playing, channel, topic, course, showAll } = session;
+  const { busy, error } = useStore(videosLive);
+  const [query, setQuery] = useReadyText(ready, session.query, (v) => patch({ query: v }));
+  /** Started by the student on this visit. A lesson left earlier waits for them to press play. */
+  const [autoPlay, setAutoPlay] = useState<string | null>(null);
   const topics = useMemo(() => VIDEO_TOPICS.filter((t) => course === "all" || t.course === course), [course]);
   const courseVideos = useMemo(() => {
     const seen = new Set<string>();
     return topics.flatMap((t) => t.videos.map((v) => ({ ...v, topic: t.name, topicSlug: t.slug }))).filter((v) => !seen.has(v.id) && !!seen.add(v.id));
   }, [topics]);
 
+  const play = (v: VideoMatch | null) => {
+    setAutoPlay(v?.id ?? null);
+    patch({ playing: v });
+  };
+
+  /** Finishes even if the student leaves the page; the lessons are waiting when they return. */
   const search = async (q: string) => {
     const text = q.trim();
     if (!text) return;
-    setBusy(true);
-    setError(null);
-    setTopic(null);
+    const owner = currentOwner();
+    const run = ++latestSearch;
+    videosLive.set(() => ({ busy: true, error: null }));
+    patch({ topic: null });
+    let failed: string | null = null;
     try {
       const res = await fetch("/api/videos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: text }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Search failed.");
-      setAdvice(data.advice);
-      setResults(data.curated);
-      setYoutube(data.youtube ?? []);
-      setPlaying(data.curated[0] ?? data.youtube?.[0] ?? null);
+      if (run !== latestSearch) return;
+      const first: VideoMatch | null = data.curated[0] ?? data.youtube?.[0] ?? null;
+      setAutoPlay(first?.id ?? null);
+      videosSession.set((s) => ({ ...s, searched: text, advice: data.advice ?? "", results: data.curated, youtube: data.youtube ?? [], playing: first }), owner);
     } catch (e) {
-      setError((e as Error).message);
+      failed = (e as Error).message;
     } finally {
-      setBusy(false);
+      if (run === latestSearch) videosLive.set(() => ({ busy: false, error: failed }));
     }
   };
 
+  const arrival = params.get("q")?.trim() ?? "";
   useEffect(() => {
-    const q = params.get("q");
-    if (q) void search(q);
+    if (!ready || !arrival) return;
+    const s = videosSession.get();
+    patch({ query: arrival });
+    if (s.searched !== arrival || !s.results) void search(arrival);
+    // A refresh or the back button shows the saved results instead of searching again.
+    window.history.replaceState(null, "", "/videos");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ready, arrival]);
 
   const browse = useMemo(() => (topic ? videosForSlug(topic) : course !== "all" && !results ? courseVideos : null), [topic, course, results, courseVideos]);
   const list = (browse ?? results ?? []).filter((v) => channel === "All" || v.channel === channel);
@@ -94,7 +109,15 @@ export function VideosView() {
       {playing && (
         <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <div>
-            <VideoEmbed key={playing.id} id={playing.id} title={playing.title} autoLoad />
+            <VideoEmbed
+              // A new key per start, so pressing a lesson again opens it.
+              key={`${playing.id}-${autoPlay === playing.id}`}
+              id={playing.id}
+              title={playing.title}
+              autoLoad={autoPlay === playing.id}
+              startAt={session.positions[playing.id] ?? 0}
+              onPosition={(s) => rememberPosition(playing.id, s)}
+            />
             <div className="mt-2">
               <div className="font-semibold">{playing.title}</div>
               <div className="text-sm text-muted">
@@ -121,7 +144,7 @@ export function VideosView() {
               <button
                 key={c}
                 type="button"
-                onClick={() => setChannel(c)}
+                onClick={() => patch({ channel: c })}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${channel === c ? "border-text bg-text text-bg" : "border-line text-muted hover:border-text/40 hover:text-text"}`}
               >
                 {c}
@@ -131,12 +154,12 @@ export function VideosView() {
           {list.length === 0 ? (
             <p className="text-sm text-muted">No curated lesson matches that yet. Try naming the skill, such as &quot;factoring trinomials&quot;.</p>
           ) : (
-            <VideoGrid videos={list} playing={playing} onPlay={setPlaying} />
+            <VideoGrid videos={list} playing={playing} onPlay={play} />
           )}
           {youtube.length > 0 && !browse && (
             <>
               <h3 className="pt-2 font-semibold">More from YouTube</h3>
-              <VideoGrid videos={youtube} playing={playing} onPlay={setPlaying} />
+              <VideoGrid videos={youtube} playing={playing} onPlay={play} />
             </>
           )}
         </section>
@@ -159,10 +182,7 @@ export function VideosView() {
               role="tab"
               aria-selected={course === c.id}
               onClick={() => {
-                setCourse(c.id);
-                setTopic(null);
-                setShowAll(false);
-                if (c.id !== "all") setResults(null);
+                patch({ course: c.id, topic: null, showAll: false, ...(c.id !== "all" ? { results: null, searched: "" } : {}) });
               }}
               className={`tab shrink-0 whitespace-nowrap ${course === c.id ? "tab-active" : ""}`}
             >
@@ -176,9 +196,8 @@ export function VideosView() {
               key={t.slug}
               type="button"
               onClick={() => {
-                setTopic(t.slug);
-                const v = videosForSlug(t.slug);
-                setPlaying(v[0] ?? null);
+                patch({ topic: t.slug });
+                play(videosForSlug(t.slug)[0] ?? null);
               }}
               className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${topic === t.slug ? "border-text bg-text text-bg" : "border-line text-muted hover:border-text/40 hover:text-text"}`}
             >
@@ -186,7 +205,7 @@ export function VideosView() {
             </button>
           ))}
           {!showAll && topics.length > TOPIC_PREVIEW && (
-            <button type="button" onClick={() => setShowAll(true)} className="rounded-full px-3.5 py-1.5 text-sm font-medium text-accent hover:underline">
+            <button type="button" onClick={() => patch({ showAll: true })} className="rounded-full px-3.5 py-1.5 text-sm font-medium text-accent hover:underline">
               Show all {topics.length} topics
             </button>
           )}

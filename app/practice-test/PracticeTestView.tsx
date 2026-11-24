@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Calculator, Check, ChevronDown, Eye, EyeOff, LoaderCircle, Printer, RotateCcw, Upload, X } from "lucide-react";
 import { MathBlock, MathInline, MathText } from "@/components/math/Math";
 import { TestGraph } from "@/components/math/TestGraph";
 import { StepList } from "@/components/solve/StepList";
@@ -10,9 +11,15 @@ import { compressAll } from "@/lib/image-compress";
 import { useData } from "@/lib/data/DataProvider";
 import { uid } from "@/lib/data/local";
 import { answersMatch, previewLatex } from "@/lib/grade";
+import { graphOfLatex } from "@/lib/latexExpr";
 import { describeGraph } from "@/lib/testGraph";
 import { DictateButton } from "@/components/studio/DictateButton";
 import type { AnswerReview, PracticeTest, TestLevel } from "@/lib/types";
+
+const GraphCalculator = dynamic(() => import("@/components/calculator/GraphCalculator").then((m) => m.GraphCalculator), {
+  ssr: false,
+  loading: () => <p className="card p-5 text-sm text-muted">Opening the calculator.</p>,
+});
 
 const LEVELS: { id: TestLevel; name: string; desc: string }[] = [
   { id: "same", name: "Same level", desc: "Same skills, new numbers." },
@@ -326,6 +333,18 @@ export function PracticeTestView() {
   );
 }
 
+/** After grading: what the question's own equation or function looks like. */
+function SolutionGraph({ latex, n }: { latex: string; n: number }) {
+  const graph = useMemo(() => graphOfLatex(latex), [latex]);
+  if (!graph) return null;
+  return (
+    <div>
+      <div className="label">{graph.curves.length === 2 ? "On a graph: the two sides meet at the solution" : "On a graph"}</div>
+      <TestGraph graph={graph} name={`Graph for the solution of question ${n}`} />
+    </div>
+  );
+}
+
 type Stage = "reading" | "verifying" | "writing";
 const STAGES: { id: Stage; label: string }[] = [
   { id: "reading", label: "Reading paper" },
@@ -434,6 +453,7 @@ function TestRunner({
 }) {
   const graded = test.score !== null;
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [calculator, setCalculator] = useState<"unopened" | "open" | "closed">("unopened");
 
   const [grading, setGrading] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
@@ -494,6 +514,9 @@ function TestRunner({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" className={calculator === "open" ? "btn-primary" : "btn-ghost"} aria-expanded={calculator === "open"} aria-controls="test-calculator" onClick={() => setCalculator((c) => (c === "open" ? "closed" : "open"))}>
+            <Calculator className="h-4 w-4" /> {calculator === "open" ? "Hide graphing" : "Graphing calculator"}
+          </button>
           <label className="btn-ghost cursor-pointer">
             <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={printKey} onChange={(e) => setPrintKey(e.target.checked)} />
             Answer key in print
@@ -506,6 +529,13 @@ function TestRunner({
           </button>
         </div>
       </header>
+
+      {/* Kept mounted once opened, so hiding it does not clear the student's equations. */}
+      {calculator !== "unopened" && (
+        <section id="test-calculator" className="no-print" aria-label="Graphing calculator" hidden={calculator === "closed"}>
+          <GraphCalculator initial={[""]} />
+        </section>
+      )}
 
       {note && !graded && (
         <p className="no-print callout text-sm" style={{ ["--rule" as string]: "var(--warning)" }}>
@@ -628,6 +658,7 @@ function TestRunner({
                           Correct answer: <MathInline latex={q.answerLatex} />
                         </div>
                       )}
+                      {!q.graph && !q.choiceGraphs && <SolutionGraph latex={q.promptLatex} n={n + 1} />}
                       <button className="btn-ghost btn-sm" onClick={() => setOpen((o) => ({ ...o, [q.id]: !o[q.id] }))}>
                         {open[q.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         {open[q.id] ? "Hide solution" : "Step-by-step solution"}

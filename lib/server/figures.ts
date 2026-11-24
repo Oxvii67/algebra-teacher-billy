@@ -1,5 +1,7 @@
 import { parse } from "mathjs";
+import { answersMatch } from "@/lib/grade";
 import { findPois, fmt, niceStep } from "@/lib/graph";
+import { graphableSides, graphOfLatex } from "@/lib/latexExpr";
 import { checkChoiceGraphs, checkGraph, compileCurve, type Window } from "@/lib/testGraph";
 import type { SolutionStep, TestGraph, TestQuestion } from "@/lib/types";
 
@@ -683,6 +685,24 @@ export function figureQuestion(value: unknown): Written | null {
   if (!q) return null;
   const solution: SolutionStep[] = [{ explanation: q.explain, latex: q.result }];
   return { promptLatex: "", instructions: q.instructions, type: "free_response", choices: [], answer: q.answer.key, answerLatex: q.answer.tex, solution, graph: fig.graph };
+}
+
+/**
+ * Puts the graphs of both sides on an equation question, so a test on a topic the AI left unillustrated
+ * still has a graph. The grid must show the key exactly, or the question is left as it was.
+ */
+export function illustrateEquation(q: TestQuestion): TestQuestion | null {
+  if (q.graph || q.choiceGraphs || q.type !== "free_response" || !/\bsolve\b|\bsolutions?\b/i.test(q.instructions)) return null;
+  const sides = graphableSides(q.promptLatex);
+  const drawn = sides?.length === 2 ? graphOfLatex(q.promptLatex) : null;
+  if (!sides || !drawn) return null;
+  const { xMin, xMax, yMin, yMax } = drawn;
+  const curves = sides.map((s, i) => ({ expression: s.expr, label: i ? "g(x)" : "f(x)", from: "", to: "", hole: "" }));
+  const fig = readFigure({ curves, xMin, xMax, yMin, yMax });
+  const solved = fig && solveTask("intersections", fig, "", "");
+  if (!fig || !solved || !answersMatch(solved.answer.key, q.answer)) return null;
+  const graph = { ...fig.graph, curves: fig.graph.curves.map((c, i) => ({ ...c, label: `y = ${sides[i].tex}`.slice(0, 40) })) };
+  return { ...q, graph, instructions: `${q.instructions} The graphs of both sides are shown: they meet at the solution.` };
 }
 
 /** True when the AI meant this to be a figure question. */

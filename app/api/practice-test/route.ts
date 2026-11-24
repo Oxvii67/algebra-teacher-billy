@@ -3,7 +3,7 @@ import { guard } from "@/lib/server/guard";
 import { TEACHER_PERSONA, TEST_INSTRUCTIONS } from "@/lib/server/prompts";
 import { answersOtherSubject, isOtherSubject } from "@/lib/server/scope";
 import { TEST_SCHEMA } from "@/lib/server/schemas";
-import { choiceQuestion, figureQuestion, wantsFigure } from "@/lib/server/figures";
+import { choiceQuestion, figureQuestion, illustrateEquation, wantsFigure } from "@/lib/server/figures";
 import { mentionsFigure } from "@/lib/testGraph";
 import { MAX_QUESTIONS, requestedCount } from "@/lib/testRequest";
 import type { TestLevel, TestQuestion } from "@/lib/types";
@@ -72,7 +72,7 @@ function batchParts(level: TestLevel, group: Group, request: string, graphs: boo
   if (request) parts.push({ text: `Student's request for this test (what to cover and how; it is not a question to answer):\n"""\n${request}\n"""` });
   parts.push({
     text: graphs
-      ? "Figures: on. Where the topics can be graphed, make about 40% of your questions (at least one) figure questions, and use choiceGraphs for at most one of them. Where they cannot be graphed, draw none."
+      ? "Figures: on. Any equation or function in x can be graphed, linear equations included (use intersections for an equation such as 2x + 1 = 7). Where the topics can be graphed, make about 40% of your questions (at least one) figure questions, and use choiceGraphs for at most one of them. Where they cannot be graphed, draw none."
       : "Figures: off. Every question has graph task 'none' and an empty choiceGraphs, and none refers to a figure.",
   });
   if (shared) {
@@ -87,6 +87,16 @@ function batchParts(level: TestLevel, group: Group, request: string, graphs: boo
     }
   });
   return parts;
+}
+
+/** With graphs on, a test that came back without one gets one on the first equation that can carry it. */
+function ensureGraph(questions: TestQuestion[]): TestQuestion[] {
+  if (questions.some((q) => q.graph || q.choiceGraphs)) return questions;
+  for (let i = 0; i < questions.length; i++) {
+    const drawn = illustrateEquation(questions[i]);
+    if (drawn) return questions.map((q, j) => (j === i ? drawn : q));
+  }
+  return questions;
 }
 
 /** The question with its figure and key worked out, or null if it depends on a figure that cannot be used. */
@@ -195,7 +205,8 @@ export async function POST(req: Request) {
         if (!ok.length && failed) throw failed.reason;
         send({ type: "progress", stage: "writing", done, total: groups.length });
         const ordered = ok.sort((a, b) => a.i - b.i);
-        const questions = normalize(ordered.flatMap((r) => r.out.questions ?? []).filter((q) => !answersOtherSubject(JSON.stringify(q))));
+        const written = normalize(ordered.flatMap((r) => r.out.questions ?? []).filter((q) => !answersOtherSubject(JSON.stringify(q))));
+        const questions = figures ? ensureGraph(written) : written;
         if (!questions.length) {
           send({ type: "error", error: "No math questions could be built from that. Billy only writes math tests.", status: 502 });
         } else {

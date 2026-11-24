@@ -25,6 +25,7 @@ export function StudioInput({
   onTab,
   owner,
   initialLatex = "",
+  clearCount = 0,
 }: {
   onSubmit: (input: SolveInput) => void;
   busy?: boolean;
@@ -34,6 +35,8 @@ export function StudioInput({
   /** Whose draft to load and keep; null until sign-in state is known. */
   owner: string | null;
   initialLatex?: string;
+  /** Goes up each time the student starts a new problem. */
+  clearCount?: number;
 }) {
   const [image, setImage] = useState<string | null>(null);
   const [drawing, setDrawing] = useState<string | null>(null);
@@ -71,6 +74,16 @@ export function StudioInput({
       cancelled = true;
     };
   }, [owner, loadedFor, initialLatex]);
+
+  const cleared = useRef(clearCount);
+  useEffect(() => {
+    if (cleared.current === clearCount) return;
+    cleared.current = clearCount;
+    setImage(null);
+    setStrokes([]);
+    setLatex("");
+    setNote("");
+  }, [clearCount]);
 
   const unsaved = useRef<{ owner: string; draft: StudioDraft } | null>(null);
   const flush = useCallback(() => {

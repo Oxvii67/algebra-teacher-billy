@@ -5,11 +5,12 @@ import { useEffect, useRef } from "react";
 import { ArrowUp, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { MathBlock, MathText } from "@/components/math/Math";
 import { WorksheetText } from "@/components/math/WorksheetText";
+import { SavedNote } from "@/components/shell/SavedNote";
 import { useData } from "@/lib/data/DataProvider";
 import { uid } from "@/lib/data/local";
 import { mathSpeech } from "@/lib/mathSpeech";
 import { currentOwner, useStore } from "@/lib/session/store";
-import { type Thread, tidy, tutorLive, tutorSession } from "@/lib/session/tutor";
+import { chatTitle, deleteChat, openChat, type Thread, tidy, tutorLive, tutorSession } from "@/lib/session/tutor";
 import { useReadyText } from "@/lib/session/useReadyText";
 import type { ChatMessage, TutorReply } from "@/lib/types";
 
@@ -26,15 +27,7 @@ const OPENING = "I'm Billy. Ask me any math question and I'll work it out, every
 
 const PROBLEM_CHIPS = ["Walk me through the first step", "I think I know the first move", "What skill do I need here?"];
 
-/** What a past chat is called in the list: its first question. */
-function chatTitle(t: Thread): string {
-  const first = t.messages.find((m) => m.role === "user")?.content ?? "Chat";
-  const text = first.replace(/\s+/g, " ").trim();
-  return text.length > 48 ? `${text.slice(0, 45)}...` : text;
-}
-
 const setDraft = (draft: string) => tutorSession.set((s) => ({ ...s, draft }));
-const openChat = (id: string | null) => tutorSession.set((s) => tidy({ ...s, activeId: id }));
 
 export function TutorView() {
   const params = useSearchParams();
@@ -110,9 +103,8 @@ export function TutorView() {
     void ask(id, next, problem);
   };
 
-  const remove = () => {
-    if (!thread || !window.confirm("Delete this chat? It cannot be brought back.")) return;
-    tutorSession.set((s) => ({ ...s, threads: s.threads.filter((t) => t.id !== thread.id), activeId: null }));
+  const remove = (t: Thread) => {
+    if (window.confirm("Delete this chat? It cannot be brought back.")) deleteChat(t.id);
   };
 
   return (
@@ -123,110 +115,155 @@ export function TutorView() {
           <h1 className="page-title mt-1">Ask Billy</h1>
           <p className="mt-1 text-sm text-muted">Ask any math question. Argue with a right answer and he will show you exactly where you are wrong.</p>
         </div>
-        {past.length > 0 && (
-          <div className="flex items-center gap-2">
-            {past.some((t) => t.id !== thread?.id) && (
-              <select className="input h-9 w-44 py-1 text-xs" aria-label="Past chats" value={messages.length ? thread!.id : ""} onChange={(e) => openChat(e.target.value || null)}>
-                {!messages.length && <option value="">Past chats</option>}
-                {past.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {chatTitle(t)}
-                  </option>
-                ))}
-              </select>
-            )}
-            {messages.length > 0 && (
-              <>
-                <button type="button" className="btn-ghost btn-sm" aria-label="Delete this chat" onClick={remove} disabled={busy}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-                <button type="button" className="btn-ghost btn-sm" onClick={() => openChat(null)}>
-                  <Plus className="h-3.5 w-3.5" /> New chat
-                </button>
-              </>
-            )}
-          </div>
-        )}
+        <div className="flex w-full items-center gap-2 sm:w-auto lg:hidden">
+          <select
+            className="input h-9 min-w-0 flex-1 py-1 text-xs sm:w-52 sm:flex-none"
+            aria-label="Saved chats"
+            value={messages.length ? thread!.id : ""}
+            disabled={!past.length}
+            onChange={(e) => openChat(e.target.value || null)}
+          >
+            {!messages.length && <option value="">{past.length ? `Saved chats (${past.length})` : "No saved chats yet"}</option>}
+            {past.map((t) => (
+              <option key={t.id} value={t.id}>
+                {chatTitle(t)}
+              </option>
+            ))}
+          </select>
+          {messages.length > 0 && (
+            <>
+              <button type="button" className="btn-ghost btn-sm" aria-label="Delete this chat" onClick={() => thread && remove(thread)} disabled={busy}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => openChat(null)}>
+                <Plus className="h-3.5 w-3.5" /> New chat
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
-      {problem && (
-        <div className="callout">
-          <span className="label">Working on</span>
-          <MathBlock latex={problem} />
-        </div>
-      )}
-
-      <div className="card graph-paper-faint flex-1 overflow-y-auto px-4 py-5 sm:px-7">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <Entry role="assistant" content={OPENING} n={0} />
-          {messages.map((m, i) => (
-            <Entry key={i} role={m.role} content={m.content} n={m.role === "assistant" ? messages.slice(0, i + 1).filter((x) => x.role === "assistant").length : 0} />
-          ))}
-          {busy && (
-            <div className="flex items-center gap-3 pl-[2.75rem] text-sm text-muted" aria-live="polite">
-              <span className="flex gap-1" aria-hidden="true">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted" />
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted [animation-delay:150ms]" />
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted [animation-delay:300ms]" />
-              </span>
-              Billy is writing
-            </div>
-          )}
-          {unanswered && (
-            <div className="callout flex flex-wrap items-center justify-between gap-3 text-sm" role="status" style={{ ["--rule" as string]: "var(--warning)" }}>
-              <span className="min-w-0 flex-1">{error ?? "Billy did not get to answer this one."}</span>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => thread && void ask(thread.id, messages, problem)}>
-                <RotateCcw className="h-3.5 w-3.5" /> Ask again
-              </button>
-            </div>
-          )}
-          <div ref={endRef} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-          {chips.map((c) => (
-            <button
-              key={c}
-              type="button"
-              disabled={busy}
-              onClick={() => send(c.replace(/\$/g, ""))}
-              className="relative shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm transition-[border-color,color,transform] duration-150 hover:-translate-y-px hover:border-accent hover:text-accent disabled:opacity-50"
-            >
-              {/[$\\]/.test(c) ? (
-                <>
-                  <span aria-hidden="true">
-                    <MathText text={c} inline />
-                  </span>
-                  <span className="sr-only">{mathSpeech(c)}</span>
-                </>
-              ) : (
-                <MathText text={c} inline />
-              )}
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="card hidden min-h-0 flex-col lg:flex" aria-label="Saved chats">
+          <div className="flex items-center justify-between gap-2 border-b border-line p-3">
+            <h2 className="text-sm font-semibold">Saved chats</h2>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => openChat(null)} disabled={!messages.length}>
+              <Plus className="h-3.5 w-3.5" /> New
             </button>
-          ))}
+          </div>
+          <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
+            {ready && !past.length && <li className="px-2 py-3 text-[13px] text-muted">Ask a question and the chat shows up here. It stays when you leave.</li>}
+            {past.map((t) => {
+              const active = t.id === thread?.id && messages.length > 0;
+              return (
+                <li key={t.id} className={`flex items-center rounded-lg ${active ? "bg-surface-2" : "hover:bg-surface-2"}`}>
+                  <button type="button" aria-current={active ? "true" : undefined} onClick={() => openChat(t.id)} className="min-w-0 flex-1 px-2.5 py-2 text-left">
+                    <span className={`block truncate text-sm ${active ? "font-medium text-text" : "text-muted"}`}>{chatTitle(t)}</span>
+                    <span className="block text-xs text-muted">
+                      {live[t.id]?.busy ? "Billy is writing" : new Date(t.updated).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 text-muted hover:text-danger disabled:opacity-40"
+                    aria-label={`Delete chat: ${chatTitle(t)}`}
+                    disabled={live[t.id]?.busy}
+                    onClick={() => remove(t)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="border-t border-line p-3">
+            <SavedNote>Saved on this device</SavedNote>
+          </div>
+        </aside>
+        <div className="flex min-h-0 min-w-0 flex-col gap-4">
+          {problem && (
+            <div className="callout">
+              <span className="label">Working on</span>
+              <MathBlock latex={problem} />
+            </div>
+          )}
+
+          <div className="card graph-paper-faint flex-1 overflow-y-auto px-4 py-5 sm:px-7">
+            <div className="mx-auto max-w-3xl space-y-6">
+              <Entry role="assistant" content={OPENING} n={0} />
+              {messages.map((m, i) => (
+                <Entry key={i} role={m.role} content={m.content} n={m.role === "assistant" ? messages.slice(0, i + 1).filter((x) => x.role === "assistant").length : 0} />
+              ))}
+              {busy && (
+                <div className="flex items-center gap-3 pl-[2.75rem] text-sm text-muted" aria-live="polite">
+                  <span className="flex gap-1" aria-hidden="true">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted [animation-delay:300ms]" />
+                  </span>
+                  Billy is writing
+                </div>
+              )}
+              {unanswered && (
+                <div className="callout flex flex-wrap items-center justify-between gap-3 text-sm" role="status" style={{ ["--rule" as string]: "var(--warning)" }}>
+                  <span className="min-w-0 flex-1">{error ?? "Billy did not get to answer this one."}</span>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => thread && void ask(thread.id, messages, problem)}>
+                    <RotateCcw className="h-3.5 w-3.5" /> Ask again
+                  </button>
+                </div>
+              )}
+              <div ref={endRef} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              {chips.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => send(c.replace(/\$/g, ""))}
+                  className="relative shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm transition-[border-color,color,transform] duration-150 hover:-translate-y-px hover:border-accent hover:text-accent disabled:opacity-50"
+                >
+                  {/[$\\]/.test(c) ? (
+                    <>
+                      <span aria-hidden="true">
+                        <MathText text={c} inline />
+                      </span>
+                      <span className="sr-only">{mathSpeech(c)}</span>
+                    </>
+                  ) : (
+                    <MathText text={c} inline />
+                  )}
+                </button>
+              ))}
+            </div>
+            <form
+              className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 pl-4 transition-[border-color,box-shadow] duration-150 focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_16%,transparent)]"
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+            >
+              <input
+                aria-label="Your math question"
+                className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Your answer or question. Math like x^2 - 4 is fine."
+                disabled={busy}
+                maxLength={2000}
+              />
+              <button type="submit" className="btn-primary h-9 w-9 rounded-full p-0" disabled={busy || !ready || !input.trim()} aria-label="Send">
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            </form>
+            <div className="lg:hidden">
+              <SavedNote>Chats save on this device by themselves.</SavedNote>
+            </div>
+          </div>
         </div>
-        <form
-          className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 pl-4 transition-[border-color,box-shadow] duration-150 focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_16%,transparent)]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
-        >
-          <input
-            aria-label="Your math question"
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Your answer or question. Math like x^2 - 4 is fine."
-            disabled={busy}
-            maxLength={2000}
-          />
-          <button type="submit" className="btn-primary h-9 w-9 rounded-full p-0" disabled={busy || !ready || !input.trim()} aria-label="Send">
-            <ArrowUp className="h-4 w-4" />
-          </button>
-        </form>
       </div>
     </div>
   );

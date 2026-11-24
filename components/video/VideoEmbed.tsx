@@ -8,7 +8,7 @@ const SAVE_EVERY_S = 5;
 /** Closer to the end than this counts as finished. */
 const END_MARGIN_S = 10;
 
-function clock(s: number): string {
+export function clock(s: number): string {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = String(Math.floor(s % 60)).padStart(2, "0");

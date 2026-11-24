@@ -66,5 +66,20 @@ export const tutorSession = createSession<TutorSession>({
   trim: (s) => ({ ...s, threads: s.threads.slice(0, 5) }),
 });
 
+/** What a saved chat is called: its first question. */
+export function chatTitle(t: Thread): string {
+  const text = (t.messages.find((m) => m.role === "user")?.content ?? "Chat").replace(/\s+/g, " ").trim();
+  return text.length > 60 ? `${text.slice(0, 57)}...` : text;
+}
+
+/** Null opens a fresh chat. */
+export function openChat(id: string | null) {
+  tutorSession.set((s) => tidy({ ...s, activeId: id }));
+}
+
+export function deleteChat(id: string) {
+  tutorSession.set((s) => ({ ...s, threads: s.threads.filter((t) => t.id !== id), activeId: s.activeId === id ? null : s.activeId }));
+}
+
 /** Per chat: whether Billy is writing, and the last failure. */
 export const tutorLive = createLive<Record<string, { busy: boolean; error: string | null }>>({});

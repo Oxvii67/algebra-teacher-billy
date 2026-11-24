@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
+import { SavedNote } from "@/components/shell/SavedNote";
+import { MathInline } from "@/components/math/Math";
 import { StudioInput } from "@/components/studio/StudioInput";
 import { SolutionView } from "@/components/solve/SolutionView";
 import { useData } from "@/lib/data/DataProvider";
@@ -28,6 +31,7 @@ export function StudioView() {
   const q = params.get("q")?.trim().slice(0, 4000) ?? "";
   const modeParam = params.get("mode");
   const [arrivalQ] = useState(q);
+  const [clearCount, setClearCount] = useState(0);
   const started = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
   /** Until saved work is known, an arrival with a new problem never flashes the old solution. */
@@ -103,13 +107,23 @@ export function StudioView() {
           <p className="mt-2 text-muted">{example ? "A worked example. Read the reason beside each line." : "One problem at a time. Add a screenshot, draw it, or use the keypad."}</p>
         </div>
         {result && (
-          <button type="button" className="btn-ghost" onClick={startNew}>
+          <button type="button" className="btn-ghost" onClick={() => {
+              // The solved problem is in the Binder; an example leaves the student's own draft alone.
+              if (!example) setClearCount((c) => c + 1);
+              startNew();
+            }}>
             <RotateCcw className="h-4 w-4" /> New problem
           </button>
         )}
       </header>
 
-      <div hidden={!!result}>
+      {result && !example && (
+        <SavedNote>
+          {saved ? "Saved in your Binder. " : ""}This solution stays here until you start a new problem.
+        </SavedNote>
+      )}
+
+      <div hidden={!!result} className="space-y-3">
         <StudioInput
           onSubmit={solve}
           busy={busy || !ready}
@@ -117,7 +131,9 @@ export function StudioView() {
           onTab={(t) => studioSession.set((s) => ({ ...s, tab: t }))}
           owner={ready ? currentOwner() : null}
           initialLatex={arrivalQ}
+          clearCount={clearCount}
         />
+        <SavedNote>Your unfinished problem is kept on this device if you leave.</SavedNote>
       </div>
 
       {busy && (
@@ -130,6 +146,38 @@ export function StudioView() {
         </div>
       )}
       {error && <div className="card border-danger p-4 text-sm text-danger">{error}</div>}
+
+      {!result && solutions.length > 0 && (
+        <section className="space-y-3" aria-labelledby="recent-title">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="recent-title" className="text-lg font-semibold">
+              Your solved problems
+            </h2>
+            <Link href="/binder" className="text-sm text-accent hover:underline">
+              All {solutions.length} in your Binder
+            </Link>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {solutions.slice(0, 4).map((s) => (
+              <li key={s.id} className="min-w-0">
+                <button
+                  type="button"
+                  className="card card-link w-full overflow-hidden p-4 text-left"
+                  onClick={() => {
+                    studioSession.set((x) => ({ ...x, result: s.result, savedId: s.id, challenge: null }));
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  <span className="block truncate text-sm font-medium">{s.title}</span>
+                  <span className="mt-1 block truncate py-1 text-sm text-muted">
+                    <MathInline latex={s.problem_latex} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div ref={topRef} />
       {result && (
@@ -151,7 +199,7 @@ export function StudioView() {
                 }}
                 aria-label="Save to folder"
               >
-                <option value="">Saved to History</option>
+                <option value="">Saved in Binder</option>
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
                     Folder: {f.name}

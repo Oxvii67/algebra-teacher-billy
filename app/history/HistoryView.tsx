@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ClipboardList, Folder, FolderOpen, FolderPlus, Inbox, Pencil, Search, Trash2 } from "lucide-react";
+import { ClipboardList, Folder, FolderOpen, FolderPlus, Inbox, MessageSquare, Pencil, Search, Trash2 } from "lucide-react";
 import { useData } from "@/lib/data/DataProvider";
+import { useStore } from "@/lib/session/store";
+import { chatTitle, deleteChat, openChat, tutorSession } from "@/lib/session/tutor";
 import { MathInline } from "@/components/math/Math";
 
-type Filter = { kind: "all" } | { kind: "unfiled" } | { kind: "folder"; id: string } | { kind: "tests" };
+type Filter = { kind: "all" } | { kind: "unfiled" } | { kind: "folder"; id: string } | { kind: "tests" } | { kind: "chats" };
 
 export function HistoryView() {
   const { ready, mode, folders, solutions, tests, createFolder, renameFolder, deleteFolder, moveSolution, deleteSolution, deleteTest } = useData();
+  const chats = useStore(tutorSession).threads.filter((t) => t.messages.length);
   const [filter, setFilter] = useState<Filter>({ kind: "all" });
   const [q, setQ] = useState("");
   const [newName, setNewName] = useState("");
@@ -56,6 +59,9 @@ export function HistoryView() {
           </button>
           <button className={item(sel({ kind: "tests" }))} onClick={() => setFilter({ kind: "tests" })}>
             <ClipboardList className="h-4 w-4" /> Practice tests <span className="ml-auto text-xs">{tests.length}</span>
+          </button>
+          <button className={item(sel({ kind: "chats" }))} onClick={() => setFilter({ kind: "chats" })}>
+            <MessageSquare className="h-4 w-4" /> Chats with Billy <span className="ml-auto text-xs">{chats.length}</span>
           </button>
           <div className="px-3 pb-1 pt-3 label">Folders</div>
           {folders.map((f) =>
@@ -122,11 +128,31 @@ export function HistoryView() {
 
         <section className="min-w-0 space-y-3" aria-labelledby="binder-list">
           <h2 id="binder-list" className="text-lg font-semibold">
-            {filter.kind === "tests" ? "Practice tests" : filter.kind === "unfiled" ? "Unfiled" : filter.kind === "folder" ? (folders.find((f) => f.id === filter.id)?.name ?? "Folder") : "All problems"}
+            {filter.kind === "chats" ? "Chats with Billy" : filter.kind === "tests" ? "Practice tests" : filter.kind === "unfiled" ? "Unfiled" : filter.kind === "folder" ? (folders.find((f) => f.id === filter.id)?.name ?? "Folder") : "All problems"}
           </h2>
           {!ready && <p className="text-sm text-muted">Loading your work.</p>}
 
-          {filter.kind === "tests" ? (
+          {filter.kind === "chats" && <p className="text-sm text-muted">Chats are saved on this device.</p>}
+          {filter.kind === "chats" ? (
+            chats.length === 0 ? (
+              <Empty text="No chats yet." href="/tutor" cta="Ask Billy" />
+            ) : (
+              chats.map((t) => (
+                <div key={t.id} className="card flex items-center gap-3 p-4">
+                  <MessageSquare className="h-5 w-5 shrink-0 text-accent" />
+                  <Link href="/tutor" onClick={() => openChat(t.id)} className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{chatTitle(t)}</div>
+                    <div className="text-xs text-muted">
+                      {t.messages.length} messages - {new Date(t.updated).toLocaleDateString()}
+                    </div>
+                  </Link>
+                  <button className="p-1.5 text-muted hover:text-danger" aria-label={`Delete chat: ${chatTitle(t)}`} onClick={() => confirm("Delete this chat?") && deleteChat(t.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )
+          ) : filter.kind === "tests" ? (
             tests.length === 0 ? (
               <Empty text="No practice tests yet." href="/practice-test" cta="Build a practice test" />
             ) : (

@@ -4,11 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Play, Search } from "lucide-react";
 import { MathText } from "@/components/math/Math";
-import { VideoEmbed } from "@/components/video/VideoEmbed";
+import { SavedNote } from "@/components/shell/SavedNote";
+import { clock, VideoEmbed } from "@/components/video/VideoEmbed";
 import { useData } from "@/lib/data/DataProvider";
 import { currentOwner, useStore } from "@/lib/session/store";
 import { useReadyText } from "@/lib/session/useReadyText";
-import { CHANNELS, rememberPosition, type VideosSession, videosLive, videosSession } from "@/lib/session/videos";
+import { CHANNELS, rememberPosition, type VideosSession, videosLive, videosSession, withRecent } from "@/lib/session/videos";
 import { COURSES, VIDEO_TOPICS, type VideoMatch, videosForSlug } from "@/lib/videos";
 
 const patch = (p: Partial<VideosSession>) => videosSession.set((s) => ({ ...s, ...p }));
@@ -35,7 +36,7 @@ export function VideosView() {
 
   const play = (v: VideoMatch | null) => {
     setAutoPlay(v?.id ?? null);
-    patch({ playing: v });
+    videosSession.set((s) => ({ ...s, playing: v, recent: withRecent(s, v) }));
   };
 
   /** Finishes even if the student leaves the page; the lessons are waiting when they return. */
@@ -54,7 +55,7 @@ export function VideosView() {
       if (run !== latestSearch) return;
       const first: VideoMatch | null = data.curated[0] ?? data.youtube?.[0] ?? null;
       setAutoPlay(first?.id ?? null);
-      videosSession.set((s) => ({ ...s, searched: text, advice: data.advice ?? "", results: data.curated, youtube: data.youtube ?? [], playing: first }), owner);
+      videosSession.set((s) => ({ ...s, searched: text, advice: data.advice ?? "", results: data.curated, youtube: data.youtube ?? [], playing: first, recent: withRecent(s, first) }), owner);
     } catch (e) {
       failed = (e as Error).message;
     } finally {
@@ -131,6 +132,18 @@ export function VideosView() {
               <MathText text={advice} className="text-sm" />
             </div>
           )}
+        </section>
+      )}
+
+      {session.recent.length > 0 && (
+        <section className="space-y-3" aria-labelledby="recent-title">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="recent-title" className="font-semibold">
+              Your recent lessons
+            </h2>
+            <SavedNote>Saved on this device with your place in each one</SavedNote>
+          </div>
+          <VideoGrid videos={session.recent.slice(0, 4)} playing={playing} onPlay={play} positions={session.positions} />
         </section>
       )}
 
@@ -215,7 +228,7 @@ export function VideosView() {
   );
 }
 
-function VideoGrid({ videos, playing, onPlay }: { videos: VideoMatch[]; playing: VideoMatch | null; onPlay: (v: VideoMatch) => void }) {
+function VideoGrid({ videos, playing, onPlay, positions }: { videos: VideoMatch[]; playing: VideoMatch | null; onPlay: (v: VideoMatch) => void; positions?: Record<string, number> }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {videos.map((v) => (
@@ -237,7 +250,10 @@ function VideoGrid({ videos, playing, onPlay }: { videos: VideoMatch[]; playing:
           </div>
           <div className="p-2.5">
             <div className="line-clamp-2 text-sm font-medium">{v.title}</div>
-            <div className="mt-0.5 text-xs text-muted">{v.channel}</div>
+            <div className="mt-0.5 text-xs text-muted">
+              {v.channel}
+              {positions?.[v.id] ? `, left at ${clock(positions[v.id])}` : ""}
+            </div>
           </div>
         </button>
       ))}

@@ -20,9 +20,12 @@ export interface VideosSession {
   showAll: boolean;
   /** Seconds watched per video id, most recent last. */
   positions: Record<string, number>;
+  /** Lessons opened, newest first. */
+  recent: VideoMatch[];
 }
 
 const MAX_POSITIONS = 50;
+const MAX_RECENT = 8;
 
 function isVideo(v: unknown): v is VideoMatch {
   const r = asRecord(v);
@@ -33,7 +36,7 @@ const videos = (v: unknown): VideoMatch[] => (Array.isArray(v) ? v.filter(isVide
 
 export const videosSession = createSession<VideosSession>({
   name: "videos",
-  initial: { query: "", searched: "", advice: "", results: null, youtube: [], playing: null, channel: "All", topic: null, course: "all", showAll: false, positions: {} },
+  initial: { query: "", searched: "", advice: "", results: null, youtube: [], playing: null, channel: "All", topic: null, course: "all", showAll: false, positions: {}, recent: [] },
   revive: (raw) => {
     const r = asRecord(raw);
     const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -48,11 +51,16 @@ export const videosSession = createSession<VideosSession>({
       topic: VIDEO_TOPICS.some((t) => t.slug === r.topic) ? (r.topic as string) : null,
       course: COURSES.find((c) => c.id === r.course)?.id ?? "all",
       showAll: r.showAll === true,
+      recent: videos(r.recent).slice(0, MAX_RECENT),
       positions: Object.fromEntries(Object.entries(asRecord(r.positions)).filter((e): e is [string, number] => isVideoId(e[0]) && typeof e[1] === "number" && e[1] > 0)),
     };
   },
-  merge: (a, g) => ({ ...g, positions: { ...a.positions, ...g.positions } }),
+  merge: (a, g) => ({ ...g, positions: { ...a.positions, ...g.positions }, recent: [...g.recent, ...a.recent.filter((v) => !g.recent.some((x) => x.id === v.id))].slice(0, MAX_RECENT) }),
 });
+
+export function withRecent(s: VideosSession, v: VideoMatch | null): VideoMatch[] {
+  return v ? [v, ...s.recent.filter((x) => x.id !== v.id)].slice(0, MAX_RECENT) : s.recent;
+}
 
 /** Remembers where a video was left. Zero (watched to the end) starts it over next time. */
 export function rememberPosition(id: string, seconds: number) {

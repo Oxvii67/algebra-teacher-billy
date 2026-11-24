@@ -344,6 +344,10 @@
   }
 }
 
+.sr-only {
+  font-size: 1rem;
+}
+
 /* Motion: the whiteboard writes itself once; everything else moves only in response to the student. */
 @keyframes write-in {
   from {

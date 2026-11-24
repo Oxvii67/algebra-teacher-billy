@@ -70,6 +70,7 @@ export const THEMES: ThemeDef[] = [
       border: "rgba(255, 255, 255, 0.1)",
       accent: "#5b9bff",
       accentFg: "#04101f",
+      accentInk: "#78aeff",
       highlight: "#f59e5b",
       success: "#5cc994",
       danger: "#ff8a7a",

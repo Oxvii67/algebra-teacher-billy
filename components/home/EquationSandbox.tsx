@@ -373,7 +373,7 @@ export function EquationSandbox() {
                 <MathInline latex={ex.answerLatex} />
               </span>
             </div>
-            <MathText text={ex.check} className="mt-2 text-[13px] text-muted" />
+            <MathText text={ex.check} className="mt-2 text-base text-muted" />
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <span className="text-[13px] text-muted">Tap a step to see it on the graph.</span>
               <Link href={ex.href} className="text-sm font-semibold text-accent underline decoration-accent/30 underline-offset-4 transition-colors hover:decoration-accent">

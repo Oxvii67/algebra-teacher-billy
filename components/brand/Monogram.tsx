@@ -8,7 +8,7 @@ export function Monogram({ size = 32, className = "" }: { size?: number; classNa
       <rect x="0.5" y="0.5" width="39" height="39" rx="10" fill="var(--text)" />
       <path d="M12 8v24" stroke="var(--bg)" strokeWidth="3.4" strokeLinecap="round" />
       <path d="M12 19.5c2.6-3.4 11.5-3.6 11.5 5.6 0 8.6-9 8.4-11.5 5.4" fill="none" stroke="var(--bg)" strokeWidth="3.4" strokeLinecap="round" />
-      <circle cx="30.5" cy="10.5" r="3.2" fill="var(--highlight)" />
+      <circle cx="30.5" cy="10.5" r="3.2" className="brand-dot" fill="var(--highlight)" />
     </svg>
   );
 }

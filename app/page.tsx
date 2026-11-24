@@ -76,7 +76,7 @@ export default function Home() {
             <svg viewBox="0 0 200 80" className="h-20 w-full" aria-hidden="true">
               <line x1="0" x2="200" y1="50" y2="50" stroke="var(--border)" />
               <line x1="100" x2="100" y1="0" y2="80" stroke="var(--border)" />
-              <path d="M30 4 Q100 140 170 4" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" />
+              <path d="M30 4 Q100 140 170 4" fill="none" stroke="var(--accent-ink)" strokeWidth="2.4" strokeLinecap="round" />
               <circle cx="60" cy="50" r="3.5" fill="var(--text)" />
               <circle cx="140" cy="50" r="3.5" fill="var(--text)" />
             </svg>

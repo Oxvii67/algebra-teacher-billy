@@ -21,7 +21,7 @@ The app works without Supabase (guest mode, stored in `localStorage`) and withou
 - Practice Test: 1 to 10 problems in, a graded test out at Same, Hard, or AP level.
 - Graphing Calculator: unlimited equations, auto sliders, clickable roots, extrema and intersections, table of values, PNG export.
 - Video Finder: AI topic matching over curated Khan Academy, Organic Chemistry Tutor, and 3Blue1Brown lessons.
-- Five themes plus custom colors, guest mode with automatic migration on sign-in, XP, levels, streaks, and skill mastery.
+- Six themes (including Crimson & Maroon) plus custom colors, guest mode with automatic migration on sign-in, XP, levels, streaks, and skill mastery.
 
 ## Model note
 

@@ -10,6 +10,9 @@
   --border: rgba(255, 255, 255, 0.1);
   --accent: #5b9bff;
   --accent-fg: #04101f;
+  /* Accent as text or thin lines, and accent as a fill behind text. Both follow the accent unless a theme splits them. */
+  --accent-ink: var(--accent);
+  --accent-solid: var(--accent);
   --highlight: #f59e5b;
   --success: #5cc994;
   --danger: #ff8a7a;
@@ -36,6 +39,9 @@
   --color-line: var(--border);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --text-color-accent: var(--accent-ink);
+  --border-color-accent: var(--accent-ink);
+  --text-decoration-color-accent: var(--accent-ink);
   --color-highlight: var(--highlight);
   --color-success: var(--success);
   --color-danger: var(--danger);
@@ -86,7 +92,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-ink);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -151,9 +157,10 @@
   }
 }
 @utility btn-primary {
-  @apply btn bg-accent text-accent-fg;
+  @apply btn text-accent-fg;
+  background: var(--accent-solid);
   &:not(:disabled):hover {
-    background: color-mix(in srgb, var(--accent) 86%, var(--text));
+    background: color-mix(in srgb, var(--accent-solid) 86%, var(--btn-hover, var(--text)));
   }
 }
 @utility btn-ghost {
@@ -202,7 +209,7 @@
     border-color 140ms var(--ease-out),
     box-shadow 140ms var(--ease-out);
   &:focus {
-    border-color: var(--accent);
+    border-color: var(--accent-ink);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
   }
 }
@@ -281,7 +288,60 @@
   font-variant-numeric: tabular-nums;
 }
 .ws-row[data-active="true"] .ws-num {
-  color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Crimson & Maroon: step numbers become vermillion badges and Billy writes in the margin in vermillion. */
+[data-theme="crimson"] {
+  /* White label on vermillion: hover deepens the fill so the label never loses contrast. */
+  --btn-hover: #000000;
+}
+/* Fading a disabled button would wash its label into the maroon; dim the fill and keep the label readable. */
+[data-theme="crimson"] .btn-primary:disabled {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+[data-theme="crimson"] :is(.btn-ghost, .btn-quiet, [class*="disabled:opacity"]):disabled {
+  opacity: 0.8;
+}
+@media screen {
+  [data-theme="crimson"] .step-badge {
+    display: inline-flex;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 0 0.3rem;
+    background: var(--accent-solid);
+    color: var(--accent-fg);
+    font-weight: 700;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+  [data-theme="crimson"] .ws-num {
+    padding-top: 0.1rem;
+  }
+  [data-theme="crimson"] .ws-row[data-active="true"] .step-badge {
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent-ink);
+  }
+  [data-theme="crimson"] .worksheet::before {
+    background: var(--accent);
+  }
+  [data-theme="crimson"] .graph-paper-faint {
+    background-image: linear-gradient(color-mix(in srgb, var(--grid) 22%, transparent) 1px, transparent 1px);
+  }
+  [data-theme="crimson"] .billy-note {
+    border-left: 3px solid var(--accent);
+  }
+  [data-theme="crimson"] .billy-name {
+    color: var(--accent-ink);
+    font-weight: 700;
+  }
+  [data-theme="crimson"] .brand-dot {
+    fill: var(--accent);
+  }
 }
 
 /* Motion: the whiteboard writes itself once; everything else moves only in response to the student. */
@@ -385,6 +445,23 @@
 }
 
 @media print {
+  /* Paper is always black on white. Theme tokens are inline on <html>, so these need !important. */
+  :root {
+    --bg: #ffffff !important;
+    --surface: #ffffff !important;
+    --surface-2: #f3f3f3 !important;
+    --text: #000000 !important;
+    --muted: #333333 !important;
+    --border: rgba(0, 0, 0, 0.25) !important;
+    --accent: #000000 !important;
+    --accent-ink: #000000 !important;
+    --accent-solid: #000000 !important;
+    --highlight: #333333 !important;
+    --success: #005a1e !important;
+    --danger: #a30000 !important;
+    --warning: #6b4000 !important;
+    --grid: #dddddd !important;
+  }
   .no-print {
     display: none !important;
   }

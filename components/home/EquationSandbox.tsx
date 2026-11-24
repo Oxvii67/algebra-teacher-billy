@@ -195,7 +195,7 @@ function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run:
           );
         })}
         {ex.hlines.map((l) => {
-          const c = l.tone === "highlight" ? "var(--highlight)" : l.tone === "accent" ? "var(--accent)" : "var(--muted)";
+          const c = l.tone === "highlight" ? "var(--highlight)" : l.tone === "accent" ? "var(--accent-ink)" : "var(--muted)";
           return (
             <g key={l.id} style={{ opacity: lit(l.id) ? 1 : 0.3, transition: "opacity 240ms" }}>
               <line x1={0} x2={W} y1={py(l.y)} y2={py(l.y)} stroke={c} strokeWidth="1.4" strokeDasharray="5 5" />
@@ -213,7 +213,7 @@ function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run:
             className="draw"
             style={{ animationDelay: `${100 + i * 300}ms`, opacity: lit(c.id) || c.tone === "accent" ? 1 : 0.35, transition: "opacity 240ms" }}
             fill="none"
-            stroke={c.tone === "highlight" ? "var(--highlight)" : "var(--accent)"}
+            stroke={c.tone === "highlight" ? "var(--highlight)" : "var(--accent-ink)"}
             strokeWidth="2.6"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -239,7 +239,7 @@ function Plot({ ex, focus, run }: { ex: SandboxExample; focus: Set<string>; run:
       {trace && (
         <g pointerEvents="none">
           <line x1={px(trace.x)} x2={px(trace.x)} y1={0} y2={H} stroke="var(--text)" strokeOpacity="0.18" strokeWidth="1" />
-          <circle cx={px(trace.x)} cy={py(trace.y)} r="5.5" fill="var(--surface)" stroke={trace.tone === "highlight" ? "var(--highlight)" : "var(--accent)"} strokeWidth="2.5" />
+          <circle cx={px(trace.x)} cy={py(trace.y)} r="5.5" fill="var(--surface)" stroke={trace.tone === "highlight" ? "var(--highlight)" : "var(--accent-ink)"} strokeWidth="2.5" />
           <g transform={`translate(${Math.min(W - 118, Math.max(4, px(trace.x) + 10))} ${Math.max(6, Math.min(H - 30, py(trace.y) - 34))})`}>
             <rect width="112" height="24" rx="6" fill="var(--text)" />
             <text x="56" y="16" textAnchor="middle" fontFamily="var(--font-code)" fontSize="11.5" fill="var(--bg)">
@@ -345,7 +345,9 @@ export function EquationSandbox() {
               const isCurrent = current === i;
               return (
                 <li key={`${active}-${run}-${i}`} className="ws-row" data-active={isCurrent} style={{ visibility: shown ? "visible" : "hidden" }}>
-                  <span className="ws-num">{i + 1}</span>
+                  <span className="ws-num">
+                    <span className="step-badge">{i + 1}</span>
+                  </span>
                   <button
                     type="button"
                     disabled={!done}

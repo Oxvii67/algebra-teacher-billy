@@ -31,7 +31,9 @@ export function WorksheetText({ text, className = "" }: { text: string; classNam
         if (b.kind === "step") {
           return (
             <div key={i} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start">
-              <span className="num pt-[0.15rem] text-xs text-highlight">{String(b.n).padStart(2, "0")}</span>
+              <span className="num pt-[0.15rem] text-xs text-highlight">
+                <span className="step-badge">{String(b.n).padStart(2, "0")}</span>
+              </span>
               <MathText text={b.text} />
             </div>
           );
@@ -39,7 +41,7 @@ export function WorksheetText({ text, className = "" }: { text: string; classNam
         if (b.kind === "rule" || b.kind === "warn") {
           return (
             <div key={i} className="callout" style={b.kind === "warn" ? { ["--rule" as string]: "var(--danger)" } : undefined}>
-              <div className="eyebrow mb-0.5" style={{ color: b.kind === "warn" ? "var(--danger)" : "var(--accent)" }}>
+              <div className="eyebrow mb-0.5" style={{ color: b.kind === "warn" ? "var(--danger)" : "var(--accent-ink)" }}>
                 {b.label}
               </div>
               <MathText text={b.text} />

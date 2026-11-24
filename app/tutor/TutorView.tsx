@@ -173,8 +173,8 @@ function Entry({ role, content, n }: ChatMessage & { n: number }) {
   return (
     <div className="step-in grid grid-cols-[2.75rem_minmax(0,1fr)]">
       <span className="num pr-3 pt-0.5 text-right text-xs text-muted">{n === 0 ? "--" : String(n).padStart(2, "0")}</span>
-      <div className="min-w-0 border-l border-highlight/40 pl-4">
-        <div className="eyebrow mb-1.5 text-text">Billy</div>
+      <div className="billy-note min-w-0 border-l border-highlight/40 pl-4">
+        <div className="billy-name eyebrow mb-1.5 text-text">Billy</div>
         <WorksheetText text={content} className="text-[0.95rem] leading-relaxed" />
       </div>
     </div>

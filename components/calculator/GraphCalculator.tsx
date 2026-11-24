@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Eye, EyeOff, Home, Minus, Plus, Trash2, X } from "lucide-react";
 import { clean, findPois, fmt, niceStep, parseLine, type Poi } from "@/lib/graph";
+import { legibleOn } from "@/lib/themes";
 
 const COLORS = ["#c2410c", "#1d4ed8", "#15803d", "#7c3aed", "#be185d", "#0e7490", "#a16207", "#4b5563"];
 
@@ -58,6 +59,8 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
   const [tableStart, setTableStart] = useState(-3);
   const [tableStep, setTableStep] = useState(1);
   const [themeTick, setThemeTick] = useState(0);
+  /** Current card color, so equation swatches can match the curves drawn on the canvas. */
+  const [surface, setSurface] = useState("#ffffff");
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -144,6 +147,8 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
     return () => obs.disconnect();
   }, []);
 
+  useEffect(() => setSurface(cssVar("--surface", "#ffffff")), [themeTick]);
+
   const draw = useCallback(
     (canvas: HTMLCanvasElement, forExport = false) => {
       const dpr = forExport ? 2 : Math.min(2, window.devicePixelRatio || 1);
@@ -155,6 +160,8 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
       const text = forExport ? "#111111" : cssVar("--text", "#111111");
       const muted = forExport ? "#666666" : cssVar("--muted", "#666666");
       const grid = forExport ? "#e5e7eb" : cssVar("--grid", "#e5e7eb");
+      // The base palette is tuned for white; nudge each color until it reads on the current surface.
+      const ink = (color: string) => legibleOn(color, bg);
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, size.w, size.h);
 
@@ -211,7 +218,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
 
       // Curves
       for (const c of live) {
-        ctx.strokeStyle = c.color;
+        ctx.strokeStyle = ink(c.color);
         ctx.lineWidth = 2.5;
         ctx.setLineDash(c.dashed ? [8, 6] : []);
         ctx.beginPath();
@@ -237,7 +244,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
       ctx.setLineDash([]);
       for (const v of verticals) {
         const { px } = toPx(v.x, 0);
-        ctx.strokeStyle = v.color;
+        ctx.strokeStyle = ink(v.color);
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(px, 0);
@@ -258,7 +265,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
       }
       for (const p of pinned) {
         const { px, py } = toPx(p.x, p.y);
-        ctx.fillStyle = p.color;
+        ctx.fillStyle = ink(p.color);
         ctx.beginPath();
         ctx.arc(px, py, 5.5, 0, Math.PI * 2);
         ctx.fill();
@@ -268,7 +275,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
         const bx = Math.min(size.w - w - 4, Math.max(4, px + 8));
         const by = Math.max(4, py - 30);
         ctx.fillStyle = bg;
-        ctx.strokeStyle = p.color;
+        ctx.strokeStyle = ink(p.color);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect(bx, by, w, 22, 5);
@@ -403,10 +410,10 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
                   type="button"
                   onClick={() => update(expr.id, { visible: !expr.visible })}
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2"
-                  style={{ borderColor: expr.color, background: expr.visible ? expr.color : "transparent" }}
+                  style={{ borderColor: legibleOn(expr.color, surface), background: expr.visible ? legibleOn(expr.color, surface) : "transparent" }}
                   aria-label={expr.visible ? "Hide graph" : "Show graph"}
                 >
-                  {expr.visible ? <Eye className="h-3.5 w-3.5 text-white" /> : <EyeOff className="h-3.5 w-3.5" style={{ color: expr.color }} />}
+                  {expr.visible ? <Eye className="h-3.5 w-3.5 text-surface" /> : <EyeOff className="h-3.5 w-3.5" style={{ color: legibleOn(expr.color, surface) }} />}
                 </button>
                 <input
                   className="w-full min-w-0 bg-transparent py-1.5 font-mono text-[15px] outline-none placeholder:text-muted"
@@ -575,7 +582,7 @@ export function GraphCalculator({ initial }: { initial: string[] }) {
           <ul className="divide-y divide-line border-t border-line text-sm lg:max-h-40 lg:overflow-y-auto">
             {pinned.map((p, i) => (
               <li key={i} className="flex items-center gap-2 px-3 py-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.color }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: legibleOn(p.color, surface) }} />
                 <span className="font-medium">{KIND_LABEL[p.kind]}</span>
                 <span className="ml-auto font-mono tabular-nums">
                   ({fmt(p.x)}, {fmt(p.y)})

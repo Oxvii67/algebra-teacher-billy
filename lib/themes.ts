@@ -1,4 +1,4 @@
-export type ThemeId = "paper" | "chalkboard" | "violet" | "sage" | "exam" | "custom";
+export type ThemeId = "paper" | "chalkboard" | "violet" | "sage" | "crimson" | "exam" | "custom";
 
 export interface ThemeTokens {
   bg: string;
@@ -9,6 +9,10 @@ export interface ThemeTokens {
   border: string;
   accent: string;
   accentFg: string;
+  /** Accent for text and thin lines, when the accent itself is too close to the surface. Defaults to accent. */
+  accentInk?: string;
+  /** Accent for fills that carry text in accentFg. Defaults to accent. */
+  accentSolid?: string;
   /** Warm secondary highlight: margin rules, streaks, emphasis marks. */
   highlight: string;
   success: string;
@@ -120,6 +124,32 @@ export const THEMES: ThemeDef[] = [
     },
   },
   {
+    // Maroon surfaces, white type. Vermillion fills; a lighter coral of the same hue wherever it is
+    // text or a thin line, because #e34234 itself is only 3:1 on the maroon card.
+    id: "crimson",
+    name: "Crimson & Maroon",
+    blurb: "Maroon with vermillion ink.",
+    tokens: {
+      bg: "#2b060b",
+      surface: "#6b0f1a",
+      surface2: "#4a0a12",
+      text: "#ffffff",
+      muted: "#f2d3cf",
+      border: "rgba(255, 255, 255, 0.2)",
+      accent: "#e34234",
+      accentFg: "#ffffff",
+      accentInk: "#ffa28f",
+      accentSolid: "#d93a2c",
+      highlight: "#ffcf8a",
+      success: "#86efac",
+      danger: "#ffb0c0",
+      warning: "#fcd34d",
+      grid: "#8c2c33",
+      shadow: "#000000",
+      scheme: "dark",
+    },
+  },
+  {
     id: "exam",
     name: "High-Contrast Exam",
     blurb: "Black on white. Nothing extra.",
@@ -162,12 +192,28 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function luminance(hex: string): number {
+export function luminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((v) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function contrast(a: string, b: string): number {
+  const [lo, hi] = [luminance(a), luminance(b)].sort((x, y) => x - y);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Lightens or darkens a color only as far as needed to reach the given contrast on a background. Hex only. */
+export function legibleOn(color: string, bg: string, min = 3.5): string {
+  if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(bg)) return color;
+  const target = contrast("#ffffff", bg) > contrast("#000000", bg) ? "#ffffff" : "#000000";
+  for (let t = 0; t < 1; t += 0.05) {
+    const c = mix(color, target, t);
+    if (contrast(c, bg) >= min) return c;
+  }
+  return target;
 }
 
 function mix(a: string, b: string, t: number): string {
@@ -213,6 +259,8 @@ export function applyTokens(t: ThemeTokens) {
   r.style.setProperty("--border", t.border);
   r.style.setProperty("--accent", t.accent);
   r.style.setProperty("--accent-fg", t.accentFg);
+  r.style.setProperty("--accent-ink", t.accentInk ?? t.accent);
+  r.style.setProperty("--accent-solid", t.accentSolid ?? t.accent);
   r.style.setProperty("--highlight", t.highlight ?? t.warning);
   r.style.setProperty("--success", t.success);
   r.style.setProperty("--danger", t.danger);
@@ -231,13 +279,14 @@ export const CUSTOM_TOKENS_KEY = "atai.theme.customTokens";
 export function themeBootScript(): string {
   const all: Record<string, ThemeTokens> = {};
   THEMES.forEach((t) => (all[t.id] = t.tokens));
+  // Themes that omit accentInk/accentSolid fall back to the :root defaults in globals.css, which follow --accent.
   return `(function(){try{
 var T=${JSON.stringify(all)};
 var id=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||${JSON.stringify(DEFAULT_THEME)};
 var t=T[id];
 if(id==="custom"){t=JSON.parse(localStorage.getItem(${JSON.stringify(CUSTOM_TOKENS_KEY)})||"null");}
 if(!t)t=T[${JSON.stringify(DEFAULT_THEME)}];
-var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",highlight:"--highlight",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
+var r=document.documentElement,m={bg:"--bg",surface:"--surface",surface2:"--surface-2",text:"--text",muted:"--muted",border:"--border",accent:"--accent",accentFg:"--accent-fg",accentInk:"--accent-ink",accentSolid:"--accent-solid",highlight:"--highlight",success:"--success",danger:"--danger",warning:"--warning",grid:"--grid",shadow:"--shadow"};
 for(var k in m)if(t[k])r.style.setProperty(m[k],t[k]);r.style.colorScheme=t.scheme;r.dataset.theme=id;
 }catch(e){}})();`;
 }

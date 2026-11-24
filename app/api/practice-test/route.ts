@@ -1,5 +1,6 @@
 import { errorResponse, generateJson, imagePart, type Part, requireKey } from "@/lib/server/ai";
 import { TEACHER_PERSONA, TEST_INSTRUCTIONS } from "@/lib/server/prompts";
+import { answersOtherSubject, isOtherSubject } from "@/lib/server/scope";
 import { TEST_SCHEMA } from "@/lib/server/schemas";
 import { MAX_QUESTIONS, requestedCount } from "@/lib/testRequest";
 import type { TestLevel, TestQuestion } from "@/lib/types";
@@ -113,6 +114,7 @@ export async function POST(req: Request) {
     const text = String(body.text ?? "").slice(0, 6000).trim();
     request = String(body.request ?? "").slice(0, 2000).trim();
     if (!images.length && !text && !request) return Response.json({ error: "Add a problem, or tell Billy what you want on the test." }, { status: 400 });
+    if (isOtherSubject(`${request}\n${text}`)) return Response.json({ error: "Billy only writes math tests. Take the other subject out and try again." }, { status: 422 });
     const total = images.reduce((n, s) => n + s.length, 0);
     if (total > 30_000_000) return Response.json({ error: "Images are too large. Crop them or send fewer." }, { status: 413 });
     const typed = text
@@ -165,9 +167,9 @@ export async function POST(req: Request) {
         if (!ok.length && failed) throw failed.reason;
         send({ type: "progress", stage: "writing", done, total: groups.length });
         const ordered = ok.sort((a, b) => a.i - b.i);
-        const questions = normalize(ordered.flatMap((r) => r.out.questions ?? []));
+        const questions = normalize(ordered.flatMap((r) => r.out.questions ?? []).filter((q) => !answersOtherSubject(JSON.stringify(q))));
         if (!questions.length) {
-          send({ type: "error", error: "No questions could be built from those problems.", status: 502 });
+          send({ type: "error", error: "No math questions could be built from that. Billy only writes math tests.", status: 502 });
         } else {
           const title = ordered.map((r) => r.out.title).find(Boolean) ?? "Practice Test";
           send({ type: "result", title, level, questions, asked: groups.reduce((n, g) => n + g.count, 0) });

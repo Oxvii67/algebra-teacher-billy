@@ -9,15 +9,15 @@ import { useData } from "@/lib/data/DataProvider";
 import type { ChatMessage, TutorReply } from "@/lib/types";
 
 const STARTERS = [
-  "Quiz me on factoring trinomials",
-  "Quiz me on logarithm rules",
+  "How do I factor a trinomial?",
+  "Explain the logarithm rules",
   "I do not understand completing the square",
-  "Test me on solving rational equations",
-  "Give me a hard exponential equation",
-  "Quiz me on domain and range",
+  "How do I solve rational equations?",
+  "How do I solve exponential equations?",
+  "How do I find domain and range?",
 ];
 
-const OPENING = "I'm Billy. Tell me the problem you're stuck on, or pick a quiz below. I won't hand you answers, but I'll stay with you until you can get them yourself.";
+const OPENING = "I'm Billy. Ask me any math question and I'll work it out, every step. Math only. Try anything else and I'll have something to say about it.";
 
 export function TutorView() {
   const params = useSearchParams();
@@ -81,7 +81,7 @@ export function TutorView() {
         <div>
           <p className="eyebrow">Tutoring session</p>
           <h1 className="page-title mt-1">Ask Billy</h1>
-          <p className="mt-1 text-sm text-muted">Billy asks the questions. Guess wrong and he will show you exactly where it breaks.</p>
+          <p className="mt-1 text-sm text-muted">Ask any math question. Argue with a right answer and he will show you exactly where you are wrong.</p>
         </div>
         {messages.length > 0 && (
           <button className="btn-ghost btn-sm" onClick={reset}>

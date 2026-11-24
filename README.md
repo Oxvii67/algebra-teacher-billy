@@ -15,7 +15,7 @@ The app works without Supabase (guest mode, stored in `localStorage`) and withou
 
 - Solve a problem (`/studio`): photo or screenshot (drag-drop, paste, webcam, crop and rotate), freehand canvas, or typed equation with a symbol keypad.
 - `/api/solve`: two-pass solve and verify, plus an independent mathjs substitution check. Shows prerequisites with lesson videos, every step, the verified answer, a faster method, an Honors challenge, and a graphing link.
-- Ask Billy (`/tutor`, `/api/tutor`): Socratic tutor that pushes back on wrong guesses, with quiz chips.
+- Ask Billy (`/tutor`, `/api/tutor`): answers any math question step by step, argues back when a student is wrong, and refuses every other subject.
 - Spot the Teacher's Mistake: 60-second drill, curated bank plus AI-generated drills.
 - Formula Cheat Sheet: prints on one page.
 - Practice Test: 1 to 10 problems in, a graded test out at Same, Hard, or AP level.

@@ -1,6 +1,7 @@
 import { errorResponse, generateJson, imagePart, type Part, requireKey } from "@/lib/server/ai";
 import { CHALLENGE_INSTRUCTIONS, SOLVE_INSTRUCTIONS, TEACHER_PERSONA } from "@/lib/server/prompts";
 import { CHALLENGE_SCHEMA, VERIFIED_SCHEMA, type VerifiedDraft } from "@/lib/server/schemas";
+import { answersOtherSubject, isOtherSubject, NOT_MATH_ERROR } from "@/lib/server/scope";
 import { numericCheck } from "@/lib/mathCheck";
 import { bestVideoFor } from "@/lib/videos";
 import type { ChallengeResult, SolveResult } from "@/lib/types";
@@ -82,6 +83,10 @@ export async function POST(req: Request) {
     if (!body.input) return Response.json({ error: "Missing input." }, { status: 400 });
     const parts = problemParts(body.input);
 
+    if (isOtherSubject(`${body.input.kind === "text" ? body.input.latex : ""} ${body.input.note ?? ""}`)) {
+      return Response.json({ error: NOT_MATH_ERROR }, { status: 422 });
+    }
+
     // One structured call: the model solves, substitutes its answer back in, and self-corrects.
     const verified = await generateJson<VerifiedDraft>(apiKey, {
       system: `${TEACHER_PERSONA}\n\n${SOLVE_INSTRUCTIONS}`,
@@ -91,6 +96,8 @@ export async function POST(req: Request) {
       thinkingBudget: 3072,
       strong: true,
     });
+
+    if (verified.isMath === false || answersOtherSubject(JSON.stringify([verified.topic, verified.skills, verified.problemSummary, verified.steps]))) return Response.json({ error: NOT_MATH_ERROR }, { status: 422 });
 
     // The numeric substitution runs locally, so it costs no quota.
     const result = finalize(verified, numericCheck(verified.numericCheck));

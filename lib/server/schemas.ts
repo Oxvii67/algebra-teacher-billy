@@ -48,6 +48,7 @@ export const SOLVE_SCHEMA = {
 export const VERIFIED_SCHEMA = {
   type: "object",
   properties: {
+    isMath: { type: "boolean" },
     ...SOLUTION_PROPS,
     verification: {
       type: "object",
@@ -55,7 +56,7 @@ export const VERIFIED_SCHEMA = {
       required: ["verified", "check", "corrections"],
     },
   },
-  required: [...SOLUTION_REQUIRED, "verification"],
+  required: ["isMath", ...SOLUTION_REQUIRED, "verification"],
 } as const;
 
 export const CHALLENGE_SCHEMA = {
@@ -80,18 +81,20 @@ export interface DraftSolution {
 }
 
 export interface VerifiedDraft extends DraftSolution {
+  isMath: boolean;
   verification: { verified: boolean; check: string; corrections: string[] };
 }
 
 export const TUTOR_SCHEMA = {
   type: "object",
   properties: {
+    scope: { type: "string", enum: ["math", "off_topic", "distress"] },
     reply: str,
     chips: strArr,
     verdict: { type: "string", enum: ["correct", "incorrect", "partial", "none"] },
     skill: str,
   },
-  required: ["reply", "chips", "verdict", "skill"],
+  required: ["scope", "reply", "chips", "verdict", "skill"],
 } as const;
 
 export const DRILL_SCHEMA = {
